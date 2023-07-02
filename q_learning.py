@@ -8,7 +8,7 @@ GAMMA = 0.99
 DECAY_RATE = 0.9999
 EPSILON = 1
 
-N_EPISODES = 10_000
+N_EPISODES = 100_000
 
 
 def q(w, s):
