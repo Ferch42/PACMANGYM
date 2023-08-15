@@ -7,7 +7,7 @@ clear = lambda: os.system('cls')
 
 # Goal definition
 T = ("UNTIL", "TRUE", ("AND", "TOUCHED", "FLAG"))
-GOAL = ("UNTIL", "TRUE", ("AND", T, ("NEXT", T) ))
+GOAL = ("UNTIL", "TRUE", ("AND", T, ("NEXT", T) )) 
 
 
 class PacmanEnv():
@@ -15,19 +15,20 @@ class PacmanEnv():
 
 	def __init__(self):
 	# Configuration Vars
-		self.SIZE = 10
-		self.AGENT_POS = (5,5)
+		self.SIZE = 20
+		self.AGENT_POS = (self.SIZE/2,self.SIZE/2)
 		self.PACMAN_POS = (0,0)
-		self.GREEN_BTN_POS = (9,0)
-		self.RED_BTN_POS = (0,9)
+		self.GREEN_BTN_POS = (self.SIZE-1,0)
+		self.RED_BTN_POS = (0,self.SIZE-1)
 		self.flag = False
 		self.GOAL = GOAL
 
 	def reset(self):
 
-		self.AGENT_POS = (5,5)
+		self.AGENT_POS = (self.SIZE/2,self.SIZE/2)
 		self.PACMAN_POS = (0,0)
 		self.flag = False
+		self.GOAL = GOAL
 		return self.get_factored_representation()
 		
 
