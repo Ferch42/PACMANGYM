@@ -27,7 +27,7 @@ class PacmanEnv():
 
 		self.AGENT_POS = (self.SIZE/2,self.SIZE/2)
 		self.PACMAN_POS = (0,0)
-		self.flag = False
+		self.flag = bool(np.random.randint(2))
 		self.GOAL = GOAL
 		return self.get_factored_representation()
 		
@@ -108,7 +108,9 @@ class PacmanEnv():
 			else:
 				reward = -1
 			P =  self.get_propositions()
-			self.AGENT_POS = (7,7)
+			
+			self.AGENT_POS = (self.SIZE/2,self.SIZE/2)
+			self.PACMAN_POS = (0,0)
 
 
 		self.GOAL = prog(P, self.GOAL)
@@ -127,7 +129,7 @@ class PacmanEnv():
 		# RED BTD coordinates
 		RED_BTN_X, RED_BTN_Y = self.RED_BTN_POS
 
-		return np.array([PACMAN_X - AGENT_X, PACMAN_Y - AGENT_Y, GREEN_BTN_X- AGENT_X, GREEN_BTN_Y - AGENT_Y, RED_BTN_X - AGENT_X, RED_BTN_Y - AGENT_Y])
+		return np.array([PACMAN_X - AGENT_X, PACMAN_Y - AGENT_Y, GREEN_BTN_X- AGENT_X, GREEN_BTN_Y - AGENT_Y, RED_BTN_X - AGENT_X, RED_BTN_Y - AGENT_Y, int(self.flag)])
 
 	def get_propositions(self):
 
