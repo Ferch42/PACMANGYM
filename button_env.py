@@ -6,8 +6,11 @@ from LTL import prog
 clear = lambda: os.system('cls')
 
 # Goal definition
-T = ("UNTIL", "TRUE", ("AND", "TOUCHED", "FLAG"))
-GOAL = ("UNTIL", "TRUE", ("AND", T, ("NEXT", T) )) 
+BREAD_COKE_HAM = ("UNTIL", "TRUE", ("AND", "BREAD",("AND", "COKE", "HAM")))
+BREAD_HAM = ("UNTIL", "TRUE", ("AND", "BREAD", "HAM"))
+BREAD = ("UNTIL", "TRUE", "BREAD")
+
+GOAL = ("UNTIL", "TRUE", ("AND", BREAD, ("UNTIL", "TRUE", ("AND", BREAD_HAM, ("UNTIL", "TRUE", BREAD_COKE_HAM))))) 
 
 
 class ButtonEnv():
@@ -15,28 +18,30 @@ class ButtonEnv():
 
 	def __init__(self):
 	# Configuration Vars
-		self.SIZE = 10
-		self.AGENT_POS = (self.SIZE/2,self.SIZE/2)
-		self.GREEN_BTN_POS = (self.SIZE-1,6)
-		self.RED_BTN_POS = (6,self.SIZE-6)
-		self.BLUE_BTN_POS = (6,self.SIZE-2)
+		self.SIZE = 20
+		self.AGENT_POS = (int(self.SIZE/2),int(self.SIZE/2))
+		self.GREEN_BTN_POS = (int(self.SIZE/3),int(self.SIZE/4))
+		self.RED_BTN_POS = (int(self.SIZE/3),int(self.SIZE/2))
+		self.BLUE_BTN_POS = (int(self.SIZE/3),3*int(self.SIZE/4))
 		self.flag = False
+		self.sigma = set()
 		self.GOAL = GOAL
 
 	def reset(self):
 
-		self.AGENT_POS = (self.SIZE/2,self.SIZE/2)
+		self.AGENT_POS = (3*int(self.SIZE/4),int(self.SIZE/2))
 		self.PACMAN_POS = (0,0)
 		self.flag = bool(np.random.randint(2))
 		self.GOAL = GOAL
-		return self.get_factored_representation()
+		#return self.get_factored_representation()
+		return self.get_discrete_representation()
 		
 
 	def render(self):
 
 		horizontal_wall_str = '#'*(self.SIZE+2)
 		
-		print(f'FLAG = {self.flag}')
+		#print(f'FLAG = {self.flag}')
 		print(horizontal_wall_str)
 		
 		for i in range(self.SIZE):
@@ -81,24 +86,25 @@ class ButtonEnv():
 		if self.AGENT_POS == self.GREEN_BTN_POS:
 			# First event
 			event = 1
-			print(1)
+			#print(1)
 			
 		if self.AGENT_POS == self.RED_BTN_POS:
 			# Second event
 			event = 2
-			print(2)
+			#print(2)
 
 		if self.AGENT_POS == self.BLUE_BTN_POS:
 			# Second event
 			event = 3
-			print(3)
+			#print(3)
 
 		reward = 0
 		P = self.get_propositions(event)
 
 		self.GOAL = prog(P, self.GOAL)
 
-		return self.get_factored_representation(),reward, type(self.GOAL) == bool, {'GOAL': self.GOAL, 'P': P, 'E': event} 
+		#return self.get_factored_representation(),reward, type(self.GOAL) == bool, {'GOAL': self.GOAL, 'P': P, 'E': event} 
+		return self.get_discrete_representation(),reward, type(self.GOAL) == bool, {'GOAL': self.GOAL, 'P': P, 'E': event} 
 
 
 	def get_factored_representation(self):
@@ -112,16 +118,28 @@ class ButtonEnv():
 		# BLUE BTN coordinates
 		BLUE_BTN_X, BLUE_BTN_Y = self.BLUE_BTN_POS
 
-		return np.array([0,0,0])
+		return np.array([self.AGENT_POS])
+
+	def get_discrete_representation(self):
+
+		# AGENT coordinates
+		AGENT_X, AGENT_Y = self.AGENT_POS
+
+		return AGENT_X + AGENT_Y * self.SIZE
 
 	def get_propositions(self, event):
 
-		P = set()
+		# Definition of Lt function
+		if self.sigma == set() and event ==1: 
+			self.sigma.add('BREAD')
 		
-		if event==1:
-			P.add('F1')
+		if self.sigma == {'BREAD'} and event ==2: 
+			self.sigma.add('HAM')
 
-		return P
+		if self.sigma == {'BREAD', 'HAM'} and event ==3: 
+			self.sigma.add('COKE')
+
+		return self.sigma
 
 
 if __name__ == '__main__':

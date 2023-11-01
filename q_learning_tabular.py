@@ -1,14 +1,15 @@
 from env import PacmanEnv
+from button_env import ButtonEnv
 import numpy as np
 import time
 
 
 ALPHA = 0.001
 GAMMA = 0.99
-DECAY_RATE = 0.9999
+DECAY_RATE = 0.999
 EPSILON = 1
 
-N_EPISODES = 100_000
+N_EPISODES = 10_000
 
 
 q = {}
@@ -17,18 +18,18 @@ def Q(obs):
 
 	global q
 
-	s = 0
-	for i in range(len(obs)):
-		s+= (obs[i]+10)*(20**i)
-	if s not in q:
-		q[s] = np.zeros(4)
+	#s = 0
+	#for i in range(len(obs)):
+	#	s+= (obs[i]+10)*(20**i)
+	if obs not in q:
+		q[obs] = np.zeros(4)
 
-	return q[s]
+	return q[obs]
 
 def main():
 
 	global EPSILON,q
-	env = PacmanEnv()
+	env = ButtonEnv()
 	obs = env.reset()
 	#w = np.zeros(shape = (4,obs.shape[0]))
 	
@@ -51,7 +52,7 @@ def main():
 			ss, reward, done, info = env.step(a)
 
 			r = 0
-			if info['E'] == 1:
+			if info['E'] == 3:
 
 				r = 1
 			#if info['E'] == 3:
