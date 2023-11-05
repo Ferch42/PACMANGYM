@@ -38,7 +38,7 @@ def main():
 
 	for ep in range(N_EPISODES):
 
-		s = env.reset()
+		s, _= env.reset()
 
 		t = 0
 		r_total = 0
@@ -48,16 +48,16 @@ def main():
 			a = np.argmax(Q(s))
 			if np.random.uniform() < EPSILON:
 				a = np.random.randint(4)
-
+			
 			ss, reward, done, info = env.step(a)
 
 			r = 0
-			if info['E'] == 3:
+			if info['E'] == 1:
 
 				r = 1
 			#if info['E'] == 3:
 			#	r= -1
-
+			#print(reward)
 			r_total += r
 			#q_target = r + GAMMA*(q(w,ss).max())*(1-r!=0)
 
@@ -69,7 +69,6 @@ def main():
 
 			Q(s)[a] = Q(s)[a] + ALPHA * (r + GAMMA*np.max(Q(ss)) - Q(s)[a])
 
-			#print(w[a])
 			s = ss
 			t+=1
 
@@ -87,13 +86,14 @@ def main():
 			print(f'TIMESTEP AVG: {np.mean(times[-100:])}')
 			print(EPSILON)
 	
-	s = env.reset()
+	s, _ = env.reset()
 
 	for _ in range(200):
 		env.render()
 		a = np.argmax(Q(s))
 
 		ss, reward, done, info = env.step(a)
+		print(reward)
 		s = ss			
 		time.sleep(0.33)
 

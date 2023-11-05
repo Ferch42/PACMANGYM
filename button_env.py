@@ -12,6 +12,7 @@ BREAD = ("UNTIL", "TRUE", "BREAD")
 
 GOAL = ("UNTIL", "TRUE", ("AND", BREAD, ("UNTIL", "TRUE", ("AND", BREAD_HAM, ("UNTIL", "TRUE", BREAD_COKE_HAM))))) 
 
+COKE_GOAL = ("UNTIL", "TRUE", "COKE")
 
 class ButtonEnv():
 
@@ -25,16 +26,17 @@ class ButtonEnv():
 		self.BLUE_BTN_POS = (int(self.SIZE/3),3*int(self.SIZE/4))
 		self.flag = False
 		self.sigma = set()
-		self.GOAL = GOAL
+		self.GOAL = COKE_GOAL
 
 	def reset(self):
 
 		self.AGENT_POS = (3*int(self.SIZE/4),int(self.SIZE/2))
 		self.PACMAN_POS = (0,0)
 		self.flag = bool(np.random.randint(2))
-		self.GOAL = GOAL
+		self.GOAL = COKE_GOAL
+		self.sigma = set()
 		#return self.get_factored_representation()
-		return self.get_discrete_representation()
+		return self.get_discrete_representation(), {'GOAL': self.GOAL, 'P': self.sigma, 'E': 0}
 		
 
 	def render(self):
@@ -103,6 +105,9 @@ class ButtonEnv():
 
 		self.GOAL = prog(P, self.GOAL)
 
+		if self.GOAL == True:
+			reward = 1
+
 		#return self.get_factored_representation(),reward, type(self.GOAL) == bool, {'GOAL': self.GOAL, 'P': P, 'E': event} 
 		return self.get_discrete_representation(),reward, type(self.GOAL) == bool, {'GOAL': self.GOAL, 'P': P, 'E': event} 
 
@@ -130,16 +135,16 @@ class ButtonEnv():
 	def get_propositions(self, event):
 
 		# Definition of Lt function
-		if self.sigma == set() and event ==1: 
+		if event ==1: 
 			self.sigma.add('BREAD')
 		
-		if self.sigma == {'BREAD'} and event ==2: 
+		if event ==2: 
 			self.sigma.add('HAM')
 
 		if self.sigma == {'BREAD', 'HAM'} and event ==3: 
 			self.sigma.add('COKE')
 
-		return self.sigma
+		return self.sigma.copy()
 
 
 if __name__ == '__main__':
