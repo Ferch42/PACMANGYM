@@ -21,16 +21,22 @@ class ButtonEnv():
 	# Configuration Vars
 		self.SIZE = 20
 		self.AGENT_POS = (int(self.SIZE/2),int(self.SIZE/2))
+		# UPPER SIDE BUTTONS
 		self.GREEN_BTN_POS = (int(self.SIZE/3),int(self.SIZE/4))
 		self.RED_BTN_POS = (int(self.SIZE/3),int(self.SIZE/2))
 		self.BLUE_BTN_POS = (int(self.SIZE/3),3*int(self.SIZE/4))
+		# LOWER SIDE BUTTONS
+		self.PURPLE_BTN_POS = (int(2*self.SIZE/3),int(self.SIZE/4))
+		self.ORANGE_BTN_POS = (int(2*self.SIZE/3),int(self.SIZE/2))
+		self.YELLOW_BTN_POS = (int(2*self.SIZE/3),3*int(self.SIZE/4))
+		
 		self.flag = False
 		self.sigma = set()
 		self.GOAL = COKE_GOAL
 
 	def reset(self):
 
-		self.AGENT_POS = (3*int(self.SIZE/4),int(self.SIZE/2))
+		self.AGENT_POS = (int(self.SIZE/2),int(self.SIZE/2))
 		self.PACMAN_POS = (0,0)
 		self.flag = bool(np.random.randint(2))
 		self.GOAL = COKE_GOAL
@@ -58,6 +64,13 @@ class ButtonEnv():
 					line_str+='R'
 				elif i == self.BLUE_BTN_POS[0] and j == self.BLUE_BTN_POS[1]:
 					line_str+='B'
+				elif i == self.PURPLE_BTN_POS[0] and j == self.PURPLE_BTN_POS[1]:
+					line_str+='P'
+				elif i == self.ORANGE_BTN_POS[0] and j == self.ORANGE_BTN_POS[1]:
+					line_str+='O'
+				elif i == self.YELLOW_BTN_POS[0] and j == self.YELLOW_BTN_POS[1]:
+					line_str+='Y'
+
 
 				else:
 					line_str+= ' '
