@@ -98,12 +98,5 @@ def main():
 		time.sleep(0.33)
 
 
-
-
-
-
-
-
-
 if __name__ == '__main__':
 	main()
