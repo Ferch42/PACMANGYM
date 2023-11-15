@@ -6,13 +6,13 @@ from LTL import prog
 clear = lambda: os.system('cls')
 
 # Goal definition
-BREAD_COKE_HAM = ("UNTIL", "TRUE", ("AND", "BREAD",("AND", "COKE", "HAM")))
-BREAD_HAM = ("UNTIL", "TRUE", ("AND", "BREAD", "HAM"))
-BREAD = ("UNTIL", "TRUE", "BREAD")
+LIGHT_GOAL = ("UNTIL", "TRUE", ("AND", "LIGHT", ("UNTIL", "TRUE", ("AND", "SOUND", ("UNTIL", "TRUE", ("AND", ("NOT", "LIGHT"), ("UNTIL", "TRUE", "MONKEY")))))))
 
-GOAL = ("UNTIL", "TRUE", ("AND", BREAD, ("UNTIL", "TRUE", ("AND", BREAD_HAM, ("UNTIL", "TRUE", BREAD_COKE_HAM))))) 
+MONKEY_GOAL = ("UNTIL", "TRUE", "MONKEY")
 
-COKE_GOAL = ("UNTIL", "TRUE", "COKE")
+SOUND_GOAL = ("UNTIL", "TRUE", ("AND", "LIGHT", ("UNTIL", "TRUE", "SOUND")))
+
+FINAL_GOAL = LIGHT_GOAL
 
 class ButtonEnv():
 
@@ -32,14 +32,15 @@ class ButtonEnv():
 		
 		self.flag = False
 		self.sigma = set()
-		self.GOAL = COKE_GOAL
+		self.GOAL = FINAL_GOAL
+		self.propositions =  set(("LIGHT", "SOUND", "MONKEY"))
 
 	def reset(self):
 
 		self.AGENT_POS = (int(self.SIZE/2),int(self.SIZE/2))
 		self.PACMAN_POS = (0,0)
 		self.flag = bool(np.random.randint(2))
-		self.GOAL = COKE_GOAL
+		self.GOAL = FINAL_GOAL
 		self.sigma = set()
 		#return self.get_factored_representation()
 		return self.get_discrete_representation(), {'GOAL': self.GOAL, 'P': self.sigma, 'E': 0}
@@ -109,12 +110,26 @@ class ButtonEnv():
 			#print(2)
 
 		if self.AGENT_POS == self.BLUE_BTN_POS:
-			# Second event
+			# Third event
 			event = 3
 			#print(3)
 
+		if self.AGENT_POS == self.PURPLE_BTN_POS:
+			# Fourth event
+			event = 4
+			#print(1)
+			
+		if self.AGENT_POS == self.ORANGE_BTN_POS:
+			# Fifth event
+			event = 5
+			#print(2)
+
+		if self.AGENT_POS == self.YELLOW_BTN_POS:
+			# Sixth event
+			event = 6
+
 		reward = 0
-		P = self.get_propositions(event)
+		P = self.update_symbolic_state(event)
 
 		self.GOAL = prog(P, self.GOAL)
 
@@ -145,26 +160,62 @@ class ButtonEnv():
 
 		return AGENT_X + AGENT_Y * self.SIZE
 
-	def get_propositions(self, event):
+	def update_symbolic_state(self, event):
 
 		# Definition of Lt function
 		if event ==1: 
-			self.sigma.add('BREAD')
-		
-		if event ==2: 
-			self.sigma.add('HAM')
+			if "LIGHT" not in self.sigma:
+				self.sigma.add("LIGHT")
+			else:
+				self.sigma.remove("LIGHT")
 
-		if self.sigma == {'BREAD', 'HAM'} and event ==3: 
-			self.sigma.add('COKE')
+		if event ==6: 
+			if "LIGHT" in self.sigma:
+				if "SOUND" not in self.sigma:
+					self.sigma.add("SOUND")
+				else:
+					self.sigma.remove("SOUND")
+
+		if event ==3: 
+			if "LIGHT" not in self.sigma and "SOUND" in self.sigma:
+				self.sigma.add("MONKEY")
+
 
 		return self.sigma.copy()
+
+
+
+
+def update_symbolic_state_2(sigma,event):
+
+	# Definition of Lt function
+	if event ==1: 
+		if "LIGHT" not in sigma:
+			sigma.add("LIGHT")
+		else:
+			sigma.remove("LIGHT")
+
+	if event ==6: 
+		if "LIGHT" in sigma:
+			if "SOUND" not in sigma:
+				sigma.add("SOUND")
+			else:
+				sigma.remove("SOUND")
+
+	if event ==3: 
+		if "LIGHT" not in sigma and "SOUND" in sigma:
+			sigma.add("MONKEY")
+
+
+	return sigma.copy()
+
 
 
 if __name__ == '__main__':
 	
 	env = ButtonEnv()
 
-	for i in range(1000):
+	for i in range(10):
 
 		env.render()
 		time.sleep(0.5)
@@ -174,3 +225,41 @@ if __name__ == '__main__':
 		#print(f'reward = {reward}')
 		#print(f'P = {P}')
 		#print(env.step(int(input())))
+
+	
+	print(tuple(env.sigma))
+	state_dict = {}
+	state_dict[tuple(env.sigma)] = 0
+	transitions = set()
+
+	i = 0
+
+	sigma = tuple(env.sigma)
+	new_states_list = [sigma]
+
+	while True:
+
+		new_states = new_states_list.pop(0)
+
+		for e in [1,3,6]:
+
+			new_sigma = tuple(update_symbolic_state_2(set(new_states),e))
+
+			if new_sigma not in state_dict:
+
+				i+=1 
+				state_dict[new_sigma] = i
+				new_states_list.append(new_sigma)
+
+			transitions.add((state_dict[new_states], state_dict[new_sigma]))
+
+
+		if len(new_states_list) == 0:
+			break
+
+	print(state_dict)
+	print(transitions)
+
+
+
+

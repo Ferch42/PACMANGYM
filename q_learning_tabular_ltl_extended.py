@@ -2,15 +2,17 @@ from env import PacmanEnv
 from button_env import ButtonEnv
 import numpy as np
 import time
+from ltl_graph_generator import *
 
 
-ALPHA = 0.001
+ALPHA = 0.1
 GAMMA = 0.99
 DECAY_RATE = 0.9999
 EPSILON = 1
 
-N_EPISODES = 10_000
+N_EPISODES = 20_000
 
+REWARD_SHAPPING_FLAG = True
 
 q = {}
 
@@ -38,6 +40,7 @@ def main():
 	rewards = []
 	times = []
 
+	print(REWARD_SHAPPING_FLAG)
 	for ep in range(N_EPISODES):
 
 		s, info = env.reset()
@@ -46,6 +49,10 @@ def main():
 		goal = info['GOAL']
 		#print('========================')
 		#print('initial state', s,sigma, goal)
+		goal_V = value_iteration_graph(*generate_graph(goal, env.propositions))
+		#print(goal_V)
+		#break
+		
 		t = 0
 		r_total = 0
 		while(t<500):
@@ -60,12 +67,18 @@ def main():
 			next_sigma = info['P']
 			next_goal = info['GOAL']
 
+
+			r_total += reward
+
 			r = reward
 
-			r_total += r
+			if REWARD_SHAPPING_FLAG:
+
+				r = r + GAMMA * goal_V[next_goal] - goal_V[goal]
+				
 
 			Q(s,sigma, goal)[a] = Q(s,sigma, goal)[a] + ALPHA * (r + (1- int(done))*GAMMA*np.max(Q(ss, next_sigma, next_goal)) - Q(s,sigma, goal)[a])
-
+			#print( Q(s,sigma, goal)[a], r, r + (1- int(done))*GAMMA*np.max(Q(ss, next_sigma, next_goal)) - Q(s,sigma, goal)[a])
 			#print(w[a])
 			s = ss
 			sigma = next_sigma
@@ -91,7 +104,7 @@ def main():
 			global q
 			print('----------')
 			for k in q:
-				if q[k].sum()> 0 :
+				if q[k].sum()!= 0 :
 					cc+=1
 			#print(sorted(q.keys()))
 			print(f"len_{len(q)}")

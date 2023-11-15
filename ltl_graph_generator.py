@@ -34,11 +34,11 @@ def generate_graph(formula, proprositions):
 	return graph_states_dict, graph_transitions
 
 
-def value_iteration_graph(graph_states_dict,graph_transitions, epsilon = 0.00001, gamma = 0.9):
+def value_iteration_graph(graph_states_dict,graph_transitions, epsilon = 0.00001, gamma = 0.99):
 
 	V = {}
 	for state in graph_states_dict.values():
-		V[state] = 1
+		V[state] = 0
 
 	terminal_state = graph_states_dict[True]
 
@@ -55,12 +55,99 @@ def value_iteration_graph(graph_states_dict,graph_transitions, epsilon = 0.00001
 
 		if delta< epsilon:
 			break
-	return V
+
+	V_state = dict((k,V[v]) for k,v in graph_states_dict.items())
+
+	return V_state
 
 
 
+def value_iteration_ltl_graph(graph_states_dict,graph_transitions, epsilon = 0.00001, gamma = 0.99):
+
+	V = {}
+	for state in graph_states_dict.values():
+		V[state] = 0
+
+	terminal_state_list = [ts for ts in graph_states_dict if ts[0]==True]
+	assert(len(terminal_state_list) == 1)
+
+	terminal_state_item  = terminal_state_list.pop(0)
+
+	terminal_state = graph_states_dict[terminal_state_item]
+
+	r = lambda s,ss: 1 if ss==terminal_state and s!=terminal_state  else 0
+
+	while True:
+
+		delta = 0
+		for s in graph_states_dict.values():
+
+			V_target = reduce(max, [r(state,next_state) + gamma*V[next_state] for state,next_state in graph_transitions if s==state])
+			delta = max(delta, abs(V[s] - V_target))
+			V[s] = V_target
+
+		if delta< epsilon:
+			break
+
+	V_state = dict((k,V[v]) for k,v in graph_states_dict.items())
+
+	return V_state
+
+
+def generate_ltl_env_graph(sigma,formula,state_dict ,transitions):
+
+	
+	inverse_state_dict = dict((v,k) for k,v in state_dict.items())
+	ltl_state_dict = {}
+	ltl_transitions = set()
+
+	ltl_sigma = (formula, sigma)
+
+	ltl_state_dict[ltl_sigma] = 0
+
+	new_states_list = [ltl_sigma]
+	i=0
+
+	while True:
+
+		new_states = new_states_list.pop(0)
+
+		for e in [transition for transition in transitions if transition[0] == state_dict[new_states[1]]]:
+
+			next_sigma = inverse_state_dict[e[1]]
+			next_formula = prog(next_sigma, new_states[0])
+			
+			new_ltl_sigma = (next_formula, next_sigma)
+
+			if new_ltl_sigma not in ltl_state_dict:
+
+				i+=1 
+				ltl_state_dict[new_ltl_sigma] = i
+
+				if type(new_ltl_sigma[0]) != bool:
+					new_states_list.append(new_ltl_sigma)
+
+			ltl_transitions.add((ltl_state_dict[new_states], ltl_state_dict[new_ltl_sigma]))
+
+			if type(new_ltl_sigma[0]) == bool:
+				ltl_transitions.add((ltl_state_dict[new_ltl_sigma], ltl_state_dict[new_ltl_sigma]))
+
+		if len(new_states_list) == 0:
+			break
+
+	return ltl_state_dict, ltl_transitions
 
 
 
+if __name__ == '__main__':
+	
+	ENV_STATE_DICT = {(): 0, ('LIGHT',): 1, ('LIGHT', 'SOUND'): 2, ('SOUND',): 3, ('MONKEY', 'SOUND'): 4, ('LIGHT', 'MONKEY', 'SOUND'): 5, ('LIGHT', 'MONKEY'): 6, ('MONKEY',): 7}
+	TRANSITIONS = {(3, 4), (5, 4), (2, 2), (1, 0), (7, 7), (6, 5), (4, 5), (3, 3), (5, 6), (0, 1), (1, 2), (2, 1), (6, 7), (7, 6), (3, 2), (4, 4), (5, 5), (0, 0), (1, 1), (2, 3), (6, 6)}
+	LIGHT_GOAL = ("UNTIL", "TRUE", ("AND", "LIGHT", ("UNTIL", "TRUE", ("AND", "SOUND", ("UNTIL", "TRUE", ("AND", ("NOT", "LIGHT"), ("UNTIL", "TRUE", "MONKEY")))))))
 
+	generate_ltl_env_graph((), ("UNTIL", "TRUE", "MONKEY"),ENV_STATE_DICT, TRANSITIONS )
+
+	#generate_ltl_env_graph((), LIGHT_GOAL,ENV_STATE_DICT, TRANSITIONS )
+
+	print(value_iteration_ltl_graph(*generate_ltl_env_graph((), LIGHT_GOAL,ENV_STATE_DICT, TRANSITIONS )))
 
