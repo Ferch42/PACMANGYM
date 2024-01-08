@@ -1,5 +1,7 @@
 from LTL import powerset, prog
 from functools import reduce
+from button_env import update_symbolic_state_2
+from time import sleep
 
 def recursive_search(subformula, propositions, graph_transitions, graph_states_dict):
 
@@ -139,15 +141,77 @@ def generate_ltl_env_graph(sigma,formula,state_dict ,transitions):
 
 
 
+def plan_ltl_event(sigma,formula):
+
+	initial_state = (formula, sigma)
+
+	queue = [initial_state]
+	visited_set = set()
+	
+	parent_dict = {}
+
+	done = False
+	while len(queue)>0:
+		
+		node = queue.pop(0)
+		visited_set.add(node)
+		node_formula, node_sigma = node
+		
+
+		for action in range(1,7):
+
+			next_formula= prog(update_symbolic_state_2(node_sigma, action), node_formula)
+			next_node = (next_formula, update_symbolic_state_2(node_sigma, action) )
+			
+			if next_node not in visited_set:
+				queue.append(next_node)
+				parent_dict[next_node] = (node, action)
+			if next_formula == True:
+				done = True
+		if done:
+			break
+				
+	
+	# Walk back from goal to start
+	true_formula = None
+
+	for k in parent_dict:
+		if k[0]== True:
+			true_formula = k
+	S = k
+	print(S)
+	plan = []
+	nodes = [S]
+	while(S!= initial_state):
+		parent, action = parent_dict[S]
+		plan.insert(0, action)
+		nodes.insert(0, parent)
+		S = parent
+	
+	return plan, nodes
+
+
+
+		
+
+
+
+
+
+
 if __name__ == '__main__':
 	
 	ENV_STATE_DICT = {(): 0, ('LIGHT',): 1, ('LIGHT', 'SOUND'): 2, ('SOUND',): 3, ('MONKEY', 'SOUND'): 4, ('LIGHT', 'MONKEY', 'SOUND'): 5, ('LIGHT', 'MONKEY'): 6, ('MONKEY',): 7}
 	TRANSITIONS = {(3, 4), (5, 4), (2, 2), (1, 0), (7, 7), (6, 5), (4, 5), (3, 3), (5, 6), (0, 1), (1, 2), (2, 1), (6, 7), (7, 6), (3, 2), (4, 4), (5, 5), (0, 0), (1, 1), (2, 3), (6, 6)}
 	LIGHT_GOAL = ("UNTIL", "TRUE", ("AND", "LIGHT", ("UNTIL", "TRUE", ("AND", "SOUND", ("UNTIL", "TRUE", ("AND", ("NOT", "LIGHT"), ("UNTIL", "TRUE", "MONKEY")))))))
 
-	generate_ltl_env_graph((), ("UNTIL", "TRUE", "MONKEY"),ENV_STATE_DICT, TRANSITIONS )
+	#print(generate_ltl_env_graph((), ("UNTIL", "TRUE", "MONKEY"),ENV_STATE_DICT, TRANSITIONS ))
 
 	#generate_ltl_env_graph((), LIGHT_GOAL,ENV_STATE_DICT, TRANSITIONS )
 
-	print(value_iteration_ltl_graph(*generate_ltl_env_graph((), LIGHT_GOAL,ENV_STATE_DICT, TRANSITIONS )))
+	#print(value_iteration_ltl_graph(*generate_ltl_env_graph((), LIGHT_GOAL,ENV_STATE_DICT, TRANSITIONS )))
+
+	#print(generate_ltl_env_graph((), LIGHT_GOAL,ENV_STATE_DICT, TRANSITIONS ))
+
+	print(plan_ltl_event((), LIGHT_GOAL))
 

@@ -71,6 +71,14 @@ def main():
 
 			Q(s,event_goal)[a] = Q(s,event_goal)[a] + ALPHA * (r + (1- done)*GAMMA*np.max(Q(ss,event_goal))) - Q(s,event_goal)[a]
 
+			if done:
+				NS[(ss,event_goal)] = ss
+			
+			best_a = np.argmax(Q(s,event_goal))
+			if a == best_a and Q(s,event_goal)[a]>0:
+				NS[(s,event_goal)] = NS[(ss,event_goal)]
+
+
 			s = ss
 
 			t+=1
@@ -105,16 +113,17 @@ def main():
 	s, info = env.reset()
 	sigma  = tuple(sorted(info['P']))
 	goal = info['GOAL']
-	
+	event_goal = np.random.randint(1,7)
 	for _ in range(200):
 		
-		print(Q(s,1))
-		a = np.argmax(Q(s,1))
+		print(NS[(s,event_goal)])
+		print(Q(s,event_goal))
+		a = np.argmax(Q(s,event_goal))
 
 		ss, reward, done, info = env.step(a)
 		
 		env.render()
-
+		print(s)
 		next_sigma = tuple(sorted(info['P']))
 		next_goal = info['GOAL']
 		s = ss

@@ -188,26 +188,27 @@ class ButtonEnv():
 
 def update_symbolic_state_2(sigma,event):
 
+	sigma_set = set(sigma)
 	# Definition of Lt function
 	if event ==1: 
 		if "LIGHT" not in sigma:
-			sigma.add("LIGHT")
+			sigma_set.add("LIGHT")
 		else:
-			sigma.remove("LIGHT")
+			sigma_set.remove("LIGHT")
 
 	if event ==6: 
-		if "LIGHT" in sigma:
-			if "SOUND" not in sigma:
-				sigma.add("SOUND")
+		if "LIGHT" in sigma_set:
+			if "SOUND" not in sigma_set:
+				sigma_set.add("SOUND")
 			else:
-				sigma.remove("SOUND")
+				sigma_set.remove("SOUND")
 
 	if event ==3: 
-		if "LIGHT" not in sigma and "SOUND" in sigma:
-			sigma.add("MONKEY")
+		if "LIGHT" not in sigma_set and "SOUND" in sigma_set:
+			sigma_set.add("MONKEY")
 
 
-	return sigma.copy()
+	return tuple(sorted(sigma_set.copy()))
 
 
 
