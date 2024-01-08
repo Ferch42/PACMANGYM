@@ -30,6 +30,30 @@ def Q(obs, event):
 
 	return q[s]
 
+
+def planner_action(s, sigma, goal):
+
+	global q, NS, EPSILON
+	plan, _ = plan_ltl_event(sigma, goal)
+
+	# CHECK IF PLAN REACHES GOAL
+	node = s
+	plan_successful = True
+
+	for event in plan:
+		plan_successful = plan_successful and (np.max(Q(node, event)) > 0)
+		if plan_successful:
+			node = NS[(node,event)]
+		else:
+			break
+
+	if plan_successful and np.random.uniform() >= EPSILON:
+		return np.argmax(Q(s, plan[0]))
+	
+	else:
+		return np.random.randint(4)
+
+
 def main():
 
 	global EPSILON,q
@@ -45,6 +69,10 @@ def main():
 
 		s, info = env.reset()
 
+		sigma  = tuple(sorted(info['P']))
+		goal = info['GOAL']
+		#print(plan_ltl_event(sigma, goal))
+
 		t = 0
 		r_total = 0
 
@@ -53,37 +81,46 @@ def main():
 		
 		while(t<500):
 
-			# E-greedy
-			a = np.argmax(Q(s,event_goal))
-			if np.random.uniform() < EPSILON:
-				a = np.random.randint(4)
-
+			# Call the planner
+			a = planner_action(s, sigma, goal)
 
 			#print('in state', s,sigma, goal)
-			ss, reward, done, info = env.step(a)
-
+			ss, reward, done_ep, info = env.step(a)
+			next_sigma = tuple(sorted(info['P']))
+			next_goal = info['GOAL']
 			current_event = info['E']
 
-			done = r = int(current_event == event_goal)
+		
+			for ev in range(1,7):
+
+				done = 0
+				ev_reward = 0
+				if current_event!=0:
+					done = 1
+					if current_event == ev:
+						ev_reward = 1
+
+
+				Q(s,ev)[a] = Q(s,ev)[a] + ALPHA * (ev_reward + (1- done)*GAMMA*np.max(Q(ss,ev))) - Q(s,ev)[a]
+
+				if done and ev_reward ==1:
+					NS[(ss,ev)] = ss
+
+				best_a = np.argmax(Q(s,ev))
+				if a == best_a and Q(s,ev)[a]>0:
+					NS[(s,ev)] = NS[(ss,ev)]
 			
-			r_total += r
-
-
-			Q(s,event_goal)[a] = Q(s,event_goal)[a] + ALPHA * (r + (1- done)*GAMMA*np.max(Q(ss,event_goal))) - Q(s,event_goal)[a]
-
-			if done:
-				NS[(ss,event_goal)] = ss
+			#done = r = int(current_event == event_goal)
 			
-			best_a = np.argmax(Q(s,event_goal))
-			if a == best_a and Q(s,event_goal)[a]>0:
-				NS[(s,event_goal)] = NS[(ss,event_goal)]
-
+			r_total += reward
 
 			s = ss
+			sigma = next_sigma
+			goal = next_goal
 
 			t+=1
 
-			if done:
+			if done_ep:
 				#print('halolo')
 				break
 
@@ -118,7 +155,7 @@ def main():
 		
 		print(NS[(s,event_goal)])
 		print(Q(s,event_goal))
-		a = np.argmax(Q(s,event_goal))
+		a = planner_action(s, sigma, goal)
 
 		ss, reward, done, info = env.step(a)
 		

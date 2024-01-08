@@ -179,7 +179,7 @@ def plan_ltl_event(sigma,formula):
 		if k[0]== True:
 			true_formula = k
 	S = k
-	print(S)
+	#print(S)
 	plan = []
 	nodes = [S]
 	while(S!= initial_state):
