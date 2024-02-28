@@ -7,7 +7,7 @@ clear = lambda: os.system('cls')
 
 P_GOAL = ("UNTIL", "TRUE", "P")
 
-O_GOAL = ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', 'O')))
+O_GOAL = ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', 'B')))
 
 
 class LetterEnv():
