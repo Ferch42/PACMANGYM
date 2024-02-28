@@ -7,7 +7,7 @@ clear = lambda: os.system('cls')
 
 P_GOAL = ("UNTIL", "TRUE", "P")
 
-O_GOAL = ("UNTIL", "TRUE", "O")
+O_GOAL = ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', 'O')))
 
 
 class LetterEnv():
@@ -28,7 +28,7 @@ class LetterEnv():
 		
 		self.flag = False
 		self.sigma = set()
-		self.GOAL = P_GOAL
+		self.GOAL = O_GOAL
 		self.propositions =  set(("LIGHT", "SOUND", "MONKEY"))
 
 	def reset(self):
@@ -36,7 +36,7 @@ class LetterEnv():
 		self.AGENT_POS = (int(self.SIZE/2),int(self.SIZE/2))
 		self.PACMAN_POS = (0,0)
 		self.flag = bool(np.random.randint(2))
-		self.GOAL = P_GOAL
+		self.GOAL = O_GOAL
 		self.sigma = set()
 		#return self.get_factored_representation()
 		return self.get_discrete_representation(), {'GOAL': self.GOAL, 'P': self.sigma, 'E': 0}
@@ -133,7 +133,7 @@ class LetterEnv():
 			event = 6
 
 		reward = 0
-		#P = self.update_symbolic_state(event)
+		self.sigma = P
 
 		self.GOAL = prog(P, self.GOAL)
 
@@ -175,7 +175,8 @@ if __name__ == '__main__':
 
 		env.render()
 		time.sleep(0.5)
-		env.step(np.random.randint(4))
+		state, reward, done, info = env.step(int(input(">")))
+		print(state, info,reward)
 		#print(env.reset())
 		#reward, P = env.step(int(input()))
 		#print(f'reward = {reward}')
@@ -183,39 +184,3 @@ if __name__ == '__main__':
 		#print(env.step(int(input())))
 
 	
-	print(tuple(env.sigma))
-	state_dict = {}
-	state_dict[tuple(env.sigma)] = 0
-	transitions = set()
-
-	i = 0
-
-	sigma = tuple(env.sigma)
-	new_states_list = [sigma]
-
-	while True:
-
-		new_states = new_states_list.pop(0)
-
-		for e in [1,3,6]:
-
-			new_sigma = tuple(update_symbolic_state_2(set(new_states),e))
-
-			if new_sigma not in state_dict:
-
-				i+=1 
-				state_dict[new_sigma] = i
-				new_states_list.append(new_sigma)
-
-			transitions.add((state_dict[new_states], state_dict[new_sigma]))
-
-
-		if len(new_states_list) == 0:
-			break
-
-	print(state_dict)
-	print(transitions)
-
-
-
-

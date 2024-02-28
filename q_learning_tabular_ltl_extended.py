@@ -1,5 +1,5 @@
 from env import PacmanEnv
-from button_env import ButtonEnv
+from letter_env import LetterEnv
 import numpy as np
 import time
 from ltl_graph_generator import *
@@ -12,24 +12,17 @@ EPSILON = 1
 
 N_EPISODES = 20_000
 
-INFORMATIVE_GOAL_REWARD_SHAPPING_FLAG = True
-MODEL_REWARD_SHAPPING_FLAG = False
-
 q = {}
 
 
-
-ENV_STATE_DICT = {(): 0, ('LIGHT',): 1, ('LIGHT', 'SOUND'): 2, ('SOUND',): 3, ('MONKEY', 'SOUND'): 4, ('LIGHT', 'MONKEY', 'SOUND'): 5, ('LIGHT', 'MONKEY'): 6, ('MONKEY',): 7}
-TRANSITIONS = {(3, 4), (5, 4), (2, 2), (1, 0), (7, 7), (6, 5), (4, 5), (3, 3), (5, 6), (0, 1), (1, 2), (2, 1), (6, 7), (7, 6), (3, 2), (4, 4), (5, 5), (0, 0), (1, 1), (2, 3), (6, 6)}
-	
-def Q(obs, sigma, g):
+def Q(obs, g):
 
 	global q
 
 	#s = 0
 	#for i in range(len(obs)):
 	#	s+= (obs[i]+10)*(20**i)
-	s = (obs, str(sigma), g)
+	s = (obs, g)
 	#print(s)
 	if s not in q:
 		q[s] = np.zeros(4)
@@ -39,7 +32,7 @@ def Q(obs, sigma, g):
 def main():
 
 	global EPSILON,q
-	env = ButtonEnv()
+	env = LetterEnv()
 	obs = env.reset()
 	print(env.GOAL)
 	#w = np.zeros(shape = (4,obs.shape[0]))
@@ -47,20 +40,10 @@ def main():
 	rewards = []
 	times = []
 
-	print(INFORMATIVE_GOAL_REWARD_SHAPPING_FLAG)
 	for ep in range(N_EPISODES):
 
 		s, info = env.reset()
-
-		sigma  = tuple(sorted(info['P']))
 		goal = info['GOAL']
-		#print('========================')
-		#print('initial state', s,sigma, goal)
-		goal_V = value_iteration_graph(*generate_graph(goal, env.propositions))
-		#print(goal_V)
-		model_goal_V = value_iteration_ltl_graph(*generate_ltl_env_graph(tuple(sigma), goal, ENV_STATE_DICT, TRANSITIONS ))
-		#print(goal_V)
-		#break
 
 		
 		t = 0
@@ -68,13 +51,12 @@ def main():
 		while(t<500):
 
 			# E-greedy
-			a = np.argmax(Q(s,sigma, goal))
+			a = np.argmax(Q(s, goal))
 			if np.random.uniform() < EPSILON:
 				a = np.random.randint(4)
 
 			#print('in state', s,sigma, goal)
 			ss, reward, done, info = env.step(a)
-			next_sigma = tuple(sorted(info['P']))
 			next_goal = info['GOAL']
 
 
@@ -82,20 +64,10 @@ def main():
 
 			r = reward
 
-			if INFORMATIVE_GOAL_REWARD_SHAPPING_FLAG:
 
-				r = r + GAMMA * goal_V[next_goal] - goal_V[goal]
+			Q(s, goal)[a] = Q(s, goal)[a] + ALPHA * (r + (1- int(done))*GAMMA*np.max(Q(ss, next_goal)) - Q(s, goal)[a])
 
-			elif MODEL_REWARD_SHAPPING_FLAG:
-
-				r = r + GAMMA * model_goal_V[(next_goal, next_sigma)] - model_goal_V[(goal, sigma)]
-				
-
-			Q(s,sigma, goal)[a] = Q(s,sigma, goal)[a] + ALPHA * (r + (1- int(done))*GAMMA*np.max(Q(ss, next_sigma, next_goal)) - Q(s,sigma, goal)[a])
-			#print( Q(s,sigma, goal)[a], r, r + (1- int(done))*GAMMA*np.max(Q(ss, next_sigma, next_goal)) - Q(s,sigma, goal)[a])
-			#print(w[a])
 			s = ss
-			sigma = next_sigma
 			goal = next_goal
 
 			t+=1
@@ -125,40 +97,33 @@ def main():
 			#print(sorted(q.keys()))
 			print(f"len_{len(q)}")
 			print(f"Q_{cc}")
-
+		"""
 		if(np.mean(rewards[-100:])>0.9):
 
 			print(f"DONE IN {ep} EPISODES")
 			print(f"MEAN TIMESTEP =  {np.mean(times[-100:])}")
 			break
+		"""
 	
 	s, info = env.reset()
-	sigma  = tuple(sorted(info['P']))
 	goal = info['GOAL']
 	
 	for _ in range(200):
 		
-		a = np.argmax(Q(s, sigma, goal))
+		a = np.argmax(Q(s, goal))
 
 		ss, reward, done, info = env.step(a)
 		
 		env.render()
 
-		next_sigma = tuple(sorted(info['P']))
 		next_goal = info['GOAL']
 		s = ss
-		sigma = next_sigma
 		goal = next_goal	
 		
 		if done:
 			break		
 		
 		time.sleep(0.33)
-
-
-
-
-
 
 
 
