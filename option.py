@@ -1,5 +1,5 @@
 from env import PacmanEnv
-from button_env import ButtonEnv
+from letter_env import LetterEnv
 import numpy as np
 import time
 from ltl_graph_generator import *
@@ -15,6 +15,13 @@ N_EPISODES = 20_000
 q = {}
 NS = {}
 
+EVENT_KNOWLEDGE_BASE = set()
+WORLD_MODEL = set()
+
+
+def stringfy_set(s):
+
+	return str(s).replace('{', '').replace("}",'').replace('set()', '_').replace("'", "")
 
 def Q(obs, event):
 
@@ -54,10 +61,68 @@ def planner_action(s, sigma, goal):
 		return np.random.randint(4)
 
 
+
+
+def plan_from_world_model(s,formula, world_model):
+
+	sigma = stringfy_set(s)
+	initial_state = (formula, sigma)
+
+	queue = [initial_state]
+	visited_set = set()
+	
+	parent_dict = {}
+
+	done = False
+	while len(queue)>0:
+		
+		node = queue.pop(0)
+		visited_set.add(node)
+		node_formula, node_sigma = node
+
+
+		for _ ,next_sigma in [transition for transition in world_model if transition[0] == node_sigma]:
+			
+			next_formula= prog(set({next_sigma}), node_formula)
+			next_node = (next_formula, next_sigma )
+			
+			if next_node not in visited_set:
+				queue.append(next_node)
+
+				parent_dict[next_node] = (node, stringfy_set(node_sigma)+ stringfy_set(next_sigma) )
+			if next_formula == True:
+				done = True
+		if done:
+			break
+				
+	if done:
+		# Walk back from goal to start
+		true_formula = None
+		
+		for k in parent_dict:
+			if k[0]== True:
+				true_formula = k
+		S = true_formula
+		#print(S)
+		plan = []
+		nodes = [S]
+		while(S!= initial_state):
+			print(S)
+			parent, action = parent_dict[S]
+			plan.insert(0, action)
+			nodes.insert(0, parent)
+			S = parent
+		
+		return plan, nodes
+	
+	else:
+		return None, None
+
+
 def main():
 
 	global EPSILON,q
-	env = ButtonEnv()
+	env = LetterEnv()
 	obs = env.reset()
 	print(env.GOAL)
 	#w = np.zeros(shape = (4,obs.shape[0]))
@@ -69,33 +134,35 @@ def main():
 
 		s, info = env.reset()
 
-		sigma  = tuple(sorted(info['P']))
+		sigma  =info['P']
 		goal = info['GOAL']
-		#print(plan_ltl_event(sigma, goal))
 
 		t = 0
 		r_total = 0
 
-		event_goal = np.random.randint(1,7)
-		#print(event_goal)
 		
 		while(t<500):
 
-			# Call the planner
-			a = planner_action(s, sigma, goal)
+			# Random action policy
+			a = np.random.randint(4)
 
-			#print('in state', s,sigma, goal)
 			ss, reward, done_ep, info = env.step(a)
-			next_sigma = tuple(sorted(info['P']))
+			next_sigma = info['P']
 			next_goal = info['GOAL']
 			current_event = info['E']
 
+			if current_event != "_":
+				# Salient event detected
+				EVENT_KNOWLEDGE_BASE.add(current_event)
+				WORLD_MODEL.add((stringfy_set(sigma), stringfy_set(next_sigma)))
+
+
 		
-			for ev in range(1,7):
+			for ev in EVENT_KNOWLEDGE_BASE:
 
 				done = 0
 				ev_reward = 0
-				if current_event!=0:
+				if current_event!= "_":
 					done = 1
 					if current_event == ev:
 						ev_reward = 1
@@ -144,6 +211,7 @@ def main():
 					cc+=1
 			#print(sorted(q.keys()))
 			print(f"len_{len(q)}")
+			#print(q.keys())
 			print(f"Q_{cc}")
 
 	

@@ -93,46 +93,51 @@ class LetterEnv():
 		self.AGENT_POS = (max(min(self.SIZE-1,self.AGENT_POS[0]),0), max(min(self.SIZE-1,self.AGENT_POS[1]),0))
 
 		# Move the pacman
-		event = 0
+		event = "_"
 
 		P = set()
 		
 		if self.AGENT_POS == self.GREEN_BTN_POS:
 			# First event
-			event = 1
+			#event = 1
 			P.add("G")
 			#print(1)
 			
 		if self.AGENT_POS == self.RED_BTN_POS:
 			# Second event
-			event = 2
+			#event = 2
 			P.add("R")
 			#print(2)
 
 		if self.AGENT_POS == self.BLUE_BTN_POS:
 			# Third event
-			event = 3
+			#event = 3
 			P.add("B")
 			#print(3)
 
 		if self.AGENT_POS == self.PURPLE_BTN_POS:
 			# Fourth event
-			event = 4
+			#event = 4
 			P.add("P")
 			#print(1)
 			
 		if self.AGENT_POS == self.ORANGE_BTN_POS:
 			# Fifth event
-			event = 5
+			#event = 5
 			P.add("O")
 			#print(2)
 
 		if self.AGENT_POS == self.YELLOW_BTN_POS:
 			# Sixth event
-			P.add("O")
-			event = 6
+			P.add("Y")
+			#event = 6
 
 		reward = 0
+
+		if self.sigma != P:
+			# Salient event occurred
+			event = (str(self.sigma) + str(P)).replace('{', '').replace("}",'').replace('set()', '_').replace("'", "")
+
 		self.sigma = P
 
 		self.GOAL = prog(P, self.GOAL)
@@ -171,7 +176,7 @@ if __name__ == '__main__':
 	
 	env = LetterEnv()
 
-	for i in range(10):
+	for i in range(100):
 
 		env.render()
 		time.sleep(0.5)
