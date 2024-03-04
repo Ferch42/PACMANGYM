@@ -38,11 +38,14 @@ def Q(obs, event):
 	return q[s]
 
 
-def planner_action(s, sigma, goal):
+def planner_action(s, sigma, goal, world_model):
 
 	global q, NS, EPSILON
-	plan, _ = plan_ltl_event(sigma, goal)
+	plan, _ = plan_from_world_model(sigma,goal, world_model)
 
+	if plan == None:
+		return np.random.randint(4)
+	
 	# CHECK IF PLAN REACHES GOAL
 	node = s
 	plan_successful = True
@@ -107,7 +110,7 @@ def plan_from_world_model(s,formula, world_model):
 		plan = []
 		nodes = [S]
 		while(S!= initial_state):
-			print(S)
+			#print(S)
 			parent, action = parent_dict[S]
 			plan.insert(0, action)
 			nodes.insert(0, parent)
@@ -144,8 +147,10 @@ def main():
 		while(t<500):
 
 			# Random action policy
-			a = np.random.randint(4)
-
+			#a = np.random.randint(4)
+			# policy by the planner
+			a = planner_action(s, sigma, goal, WORLD_MODEL)
+			
 			ss, reward, done_ep, info = env.step(a)
 			next_sigma = info['P']
 			next_goal = info['GOAL']
@@ -216,20 +221,19 @@ def main():
 
 	
 	s, info = env.reset()
-	sigma  = tuple(sorted(info['P']))
+	sigma  =info['P']
 	goal = info['GOAL']
-	event_goal = np.random.randint(1,7)
+	
 	for _ in range(200):
 		
-		print(NS[(s,event_goal)])
-		print(Q(s,event_goal))
-		a = planner_action(s, sigma, goal)
+
+		a = planner_action(s, sigma, goal, WORLD_MODEL)
 
 		ss, reward, done, info = env.step(a)
 		
 		env.render()
 		print(s)
-		next_sigma = tuple(sorted(info['P']))
+		next_sigma =info['P']
 		next_goal = info['GOAL']
 		s = ss
 		sigma = next_sigma
