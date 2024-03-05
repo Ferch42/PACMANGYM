@@ -18,6 +18,86 @@ NS = {}
 EVENT_KNOWLEDGE_BASE = set()
 WORLD_MODEL = set()
 
+REGIONS_MAP = {}
+REGIONS_LABELS = {}
+REGIONS_TRANSITIONS = set()
+region_count = 0
+
+
+def add_state(s,l):
+
+	global REGIONS_MAP, region_count
+	if s not in REGIONS_MAP:
+		REGIONS_MAP[s] = region_count
+		REGIONS_LABELS[region_count] = l
+		region_count = region_count + 1
+
+
+def rename_region(r, possible_regions):
+
+	if r in possible_regions:
+		return min(possible_regions)
+	else:
+		return r
+
+def merge_regions(r1, r2):
+
+	global REGIONS_MAP, REGIONS_TRANSITIONS
+	
+	
+	unified_region = min(r1,r2)
+
+	transitions_to_remove = set()
+	transitions_to_add = set()
+
+	for transition in REGIONS_TRANSITIONS:
+
+		if (transition[0] == r1 or transition[0] == r2) or (transition[1] == r1 or transition[1] == r2):
+
+			transitions_to_remove.add(transition)
+			transitions_to_add.add((rename_region(transition[0], (r1, r2)), rename_region(transition[1], (r1, r2))))
+
+	
+	for tr in transitions_to_remove:
+		REGIONS_TRANSITIONS.remove(tr)
+	for ta in transitions_to_add:
+		REGIONS_TRANSITIONS.add(ta)
+	for k in REGIONS_MAP.keys():
+
+		if REGIONS_MAP[k] == r1 or REGIONS_MAP[k] == r2:
+			REGIONS_MAP[k] = unified_region
+	
+def add_transition(s,l,ss,ll):
+
+	global REGIONS_MAP, REGIONS_TRANSITIONS, REGIONS_LABELS
+
+	add_state(s,l)
+	add_state(ss,ll)
+
+	REGIONS_TRANSITIONS.add((REGIONS_MAP[s], REGIONS_MAP[ss]))
+	#time.sleep(1)	
+	
+	stable = False
+
+	while not stable:
+
+		initial_size = len(REGIONS_TRANSITIONS)
+
+		region_numbers = set([x[0] for x in REGIONS_TRANSITIONS] + [x[1] for x in REGIONS_TRANSITIONS])
+
+		for r1 in region_numbers:
+			for r2 in region_numbers:
+				if r1 != r2 and (r1, r2) in REGIONS_TRANSITIONS and (r2,r1) in REGIONS_TRANSITIONS and REGIONS_LABELS[r1] == REGIONS_LABELS[r2]:
+					# Merge regions
+					merge_regions(r1,r2)
+
+		final_size = len(REGIONS_TRANSITIONS)
+
+		if initial_size == final_size:
+			stable = True
+
+	
+
 
 def stringfy_set(s):
 
@@ -162,7 +242,7 @@ def main():
 				WORLD_MODEL.add((stringfy_set(sigma), stringfy_set(next_sigma)))
 
 
-		
+			add_transition(s,sigma,ss,next_sigma)
 			for ev in EVENT_KNOWLEDGE_BASE:
 
 				done = 0
@@ -205,6 +285,7 @@ def main():
 			print(f'REWARD AVG: {np.mean(rewards[-100:])}')
 			print(f'TIMESTEP AVG: {np.mean(times[-100:])}')
 			print(EPSILON)
+
 
 
 
