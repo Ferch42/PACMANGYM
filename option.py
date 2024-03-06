@@ -126,42 +126,21 @@ def planner_action(s, goal):
 	if plan == None:
 		return np.random.randint(4)
 	
-	if len(set(REGIONS_MAP.values()))==7:
-		time.sleep(10)
-		print('------------------------------------------------')
-		print('plan')
-		print(plan)
-		print('nodes')
-		print(nodes)
-		print('nodes_labels')
-		print([REGIONS_LABELS[x[1]] for x in nodes])
 	# CHECK IF PLAN REACHES GOAL
 	node = s
 	plan_successful = True
 	
 	for event in plan:
-		if len(set(REGIONS_MAP.values()))==7:
-			print('       event')
-			print(node, event)
-			print('       Q_value')
-			print(Q(node, event))
-			print("All Q values")
-			for k in q.keys():
-
-				if k[1] == event and q[k].max()>0:
-					print(k, q[k])
 			#input('ok?')
 
 		plan_successful = plan_successful and (np.max(Q(node, event)) > 0)
 		if plan_successful:
 			node = NS[(node,event)]
 		else:
-			if len(set(REGIONS_MAP.values()))==7:
-				print('plan unsucessful')
 			break
-	#print(plan, plan_successful)
+
 	if plan_successful and np.random.uniform() >= EPSILON:
-		print("argmax")
+		
 		return np.argmax(Q(s, plan[0]))
 	
 	else:
@@ -272,16 +251,17 @@ def main():
 
 				done = 0
 				ev_reward = 0
-				if ev[0]!=ev[1]:
+				if current_event[0]!=current_event[1]:
+					done = 1
 					# Salient event detected
 					if current_event == ev:
 						ev_reward = 1
 				
 			
-				Q(s,ev)[a] = Q(s,ev)[a] + ALPHA * (ev_reward + GAMMA*np.max(Q(ss,ev))) - Q(s,ev)[a]
+				Q(s,ev)[a] = Q(s,ev)[a] + ALPHA * (ev_reward +  (1- done)*GAMMA*np.max(Q(ss,ev))) - Q(s,ev)[a]
 
 
-				if ev_reward ==1:
+				if done and ev_reward ==1:
 					NS[(ss,ev)] = ss
 
 				best_a = np.argmax(Q(s,ev))
