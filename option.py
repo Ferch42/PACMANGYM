@@ -118,26 +118,42 @@ def Q(obs, event):
 	return q[s]
 
 
-def planner_action(s, sigma, goal, world_model):
+def planner_action(s, goal):
 
-	global q, NS, EPSILON
-	plan, _ = plan_from_world_model(sigma,goal, world_model)
-
+	global q, NS, EPSILON, REGIONS_MAP, REGIONS_TRANSITIONS, REGIONS_LABELS
+	plan, nodes = plan_from_world_model(s,goal)
+	
 	if plan == None:
 		return np.random.randint(4)
 	
+	if len(set(REGIONS_MAP.values()))==7:
+		time.sleep(10)
+		print('------------------------------------------------')
+		print('plan')
+		print(plan)
+		print('nodes')
+		print(nodes)
+		print('nodes_labels')
+		print([REGIONS_LABELS[x[1]] for x in nodes])
 	# CHECK IF PLAN REACHES GOAL
 	node = s
 	plan_successful = True
-
+	
 	for event in plan:
+		if len(set(REGIONS_MAP.values()))==7:
+			print('       event')
+			print(node, event)
+			print('       Q_value')
+			print(Q(node, event))
+			
 		plan_successful = plan_successful and (np.max(Q(node, event)) > 0)
 		if plan_successful:
 			node = NS[(node,event)]
 		else:
 			break
-
+	#print(plan, plan_successful)
 	if plan_successful and np.random.uniform() >= EPSILON:
+		print("argmax")
 		return np.argmax(Q(s, plan[0]))
 	
 	else:
@@ -146,10 +162,12 @@ def planner_action(s, sigma, goal, world_model):
 
 
 
-def plan_from_world_model(s,formula, world_model):
+def plan_from_world_model(s,formula):
 
-	sigma = stringfy_set(s)
-	initial_state = (formula, sigma)
+	global REGIONS_MAP, REGIONS_TRANSITIONS, REGIONS_LABELS
+
+	region = REGIONS_MAP[s]
+	initial_state = (formula, region)
 
 	queue = [initial_state]
 	visited_set = set()
@@ -161,18 +179,18 @@ def plan_from_world_model(s,formula, world_model):
 		
 		node = queue.pop(0)
 		visited_set.add(node)
-		node_formula, node_sigma = node
+		node_formula, node_region = node
 
 
-		for _ ,next_sigma in [transition for transition in world_model if transition[0] == node_sigma]:
+		for _ ,next_region in [transition for transition in REGIONS_TRANSITIONS if transition[0] == node_region]:
 			
-			next_formula= prog(set({next_sigma}), node_formula)
-			next_node = (next_formula, next_sigma )
+			next_formula= prog(REGIONS_LABELS[next_region], node_formula)
+			next_node = (next_formula, next_region)
 			
 			if next_node not in visited_set:
 				queue.append(next_node)
 
-				parent_dict[next_node] = (node, stringfy_set(node_sigma)+ stringfy_set(next_sigma) )
+				parent_dict[next_node] = (node,(node_region, next_region))
 			if next_formula == True:
 				done = True
 		if done:
@@ -204,7 +222,7 @@ def plan_from_world_model(s,formula, world_model):
 
 def main():
 
-	global EPSILON,q
+	global EPSILON,q, REGIONS_MAP, REGIONS_TRANSITIONS
 	env = LetterEnv()
 	obs = env.reset()
 	print(env.GOAL)
@@ -222,6 +240,7 @@ def main():
 
 		t = 0
 		r_total = 0
+		add_state(s,sigma)
 
 		
 		while(t<500):
@@ -229,28 +248,30 @@ def main():
 			# Random action policy
 			#a = np.random.randint(4)
 			# policy by the planner
-			a = planner_action(s, sigma, goal, WORLD_MODEL)
+			a = planner_action(s, goal)
 			
 			ss, reward, done_ep, info = env.step(a)
 			next_sigma = info['P']
 			next_goal = info['GOAL']
-			current_event = info['E']
-
-			if current_event != "_":
-				# Salient event detected
-				EVENT_KNOWLEDGE_BASE.add(current_event)
-				WORLD_MODEL.add((stringfy_set(sigma), stringfy_set(next_sigma)))
-
+			#current_event = info['E']
 
 			add_transition(s,sigma,ss,next_sigma)
-			for ev in EVENT_KNOWLEDGE_BASE:
+
+			current_event = (REGIONS_MAP[s], REGIONS_MAP[ss])
+
+			
+			for ev in REGIONS_TRANSITIONS:
 
 				done = 0
 				ev_reward = 0
-				if current_event!= "_":
+				if ev[0]!=ev[1]:
+					# Salient event detected
 					done = 1
 					if current_event == ev:
 						ev_reward = 1
+						if len(set(REGIONS_MAP.values()))==7:
+							print('eventoooooooooooooooo_______________________')
+							print(ev)
 
 
 				Q(s,ev)[a] = Q(s,ev)[a] + ALPHA * (ev_reward + (1- done)*GAMMA*np.max(Q(ss,ev))) - Q(s,ev)[a]
@@ -286,6 +307,9 @@ def main():
 			print(f'TIMESTEP AVG: {np.mean(times[-100:])}')
 			print(EPSILON)
 
+			print('regions')
+			print(set(REGIONS_MAP.values()))
+			print(REGIONS_TRANSITIONS)
 
 
 
@@ -308,7 +332,7 @@ def main():
 	for _ in range(200):
 		
 
-		a = planner_action(s, sigma, goal, WORLD_MODEL)
+		a = planner_action(s, goal)
 
 		ss, reward, done, info = env.step(a)
 		
