@@ -217,6 +217,10 @@ def main():
 	
 	rewards = []
 	times = []
+	avg_rewards = []
+	avg_timesteps = []
+
+	
 	print(N_EPISODES)
 	for ep in range(N_EPISODES):
 
@@ -289,7 +293,9 @@ def main():
 
 			print(f'EPISODE: {ep}')
 			print(f'REWARD AVG: {np.mean(rewards[-100:])}')
+			avg_rewards.append(np.mean(rewards[-100:]))
 			print(f'TIMESTEP AVG: {np.mean(times[-100:])}')
+			avg_timesteps.append(np.mean(times[-100:]))
 			print(EPSILON)
 
 			print('regions')
@@ -313,6 +319,14 @@ def main():
 	s, info = env.reset()
 	sigma  =info['P']
 	goal = info['GOAL']
+
+
+	with open('rewards_option.txt', 'w+') as f:
+		f.write(str(avg_rewards))
+
+
+	with open('timesteps_option.txt', 'w+') as f:
+		f.write(str(avg_timesteps))
 	
 	for _ in range(200):
 		

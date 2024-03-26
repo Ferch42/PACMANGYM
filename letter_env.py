@@ -5,10 +5,11 @@ from LTL import prog
 
 clear = lambda: os.system('cls')
 
-P_GOAL = ("UNTIL", "TRUE", "P")
+P_GOAL = ("UNTIL", "TRUE", ('AND', 'P', ('UNTIL', 'TRUE', 'B')))
 
 O_GOAL = ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL', 'TRUE', 'P')))))
 
+FINAL_GOAL = O_GOAL
 
 class LetterEnv():
 
@@ -28,7 +29,7 @@ class LetterEnv():
 		
 		self.flag = False
 		self.sigma = set()
-		self.GOAL = O_GOAL
+		self.GOAL = FINAL_GOAL
 		self.propositions =  set(("LIGHT", "SOUND", "MONKEY"))
 
 	def reset(self):
@@ -36,7 +37,7 @@ class LetterEnv():
 		self.AGENT_POS = (int(self.SIZE/2),int(self.SIZE/2))
 		self.PACMAN_POS = (0,0)
 		self.flag = bool(np.random.randint(2))
-		self.GOAL = O_GOAL
+		self.GOAL = FINAL_GOAL
 		self.sigma = set()
 		#return self.get_factored_representation()
 		return self.get_discrete_representation(), {'GOAL': self.GOAL, 'P': self.sigma, 'E': 0}

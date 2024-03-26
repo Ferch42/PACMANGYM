@@ -204,6 +204,12 @@ def main():
     print(f"Fórmula adding 'light_dark' {prog({'a'},LIGHT_DARK_FORMULA)}")
     print(f"Fórmula adding 'light_dark' {prog({'LigarLux'},LIGHT_DARK_FORMULA)}")
     print(f"Fórmula adding 'light_dark' {prog({'ApagarLux', 'LUX'},prog({'LigarLux'},LIGHT_DARK_FORMULA))}")
-
+    
+    
+    P_FORMULA = ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL', 'TRUE', 'P')))))
+    print(prog({'P'}, P_FORMULA))
+    print(prog({'B'}, prog({'P'}, P_FORMULA)))
+    print(prog({'P'}, prog({'B'}, prog({'P'}, P_FORMULA))))
+    print(prog({'P'}, False))
 if __name__ =='__main__':
     main()

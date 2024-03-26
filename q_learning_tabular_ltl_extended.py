@@ -14,6 +14,13 @@ N_EPISODES = 20_000
 
 q = {}
 
+FORMULA_VALUE_DICT = {True : 0 , 
+					  ('UNTIL', 'TRUE', 'P') : 1, 
+					  ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL', 'TRUE', 'P'))): 0.9, 
+					  ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL', 'TRUE', 'P'))))): 0.81}
+					  
+REWARD_SHAPPING = True
+
 
 def Q(obs, g):
 
@@ -25,7 +32,7 @@ def Q(obs, g):
 	s = (obs, g)
 	#print(s)
 	if s not in q:
-		q[s] = np.zeros(4)
+		q[s] = np.zeros(4) 
 
 	return q[s]
 
@@ -39,6 +46,8 @@ def main():
 	
 	rewards = []
 	times = []
+	avg_rewards = []
+	avg_timesteps = []
 
 	for ep in range(N_EPISODES):
 
@@ -64,6 +73,8 @@ def main():
 
 			r = reward
 
+			if REWARD_SHAPPING:
+				r = r +  0.9* FORMULA_VALUE_DICT[next_goal] - FORMULA_VALUE_DICT[goal]
 
 			Q(s, goal)[a] = Q(s, goal)[a] + ALPHA * (r + (1- int(done))*GAMMA*np.max(Q(ss, next_goal)) - Q(s, goal)[a])
 
@@ -83,7 +94,9 @@ def main():
 
 			print(f'EPISODE: {ep}')
 			print(f'REWARD AVG: {np.mean(rewards[-100:])}')
+			avg_rewards.append(np.mean(rewards[-100:]))
 			print(f'TIMESTEP AVG: {np.mean(times[-100:])}')
+			avg_timesteps.append(np.mean(times[-100:]))
 			print(EPSILON)
 
 
@@ -107,6 +120,13 @@ def main():
 	
 	s, info = env.reset()
 	goal = info['GOAL']
+
+	with open('rewards.txt', 'w+') as f:
+		f.write(str(avg_rewards))
+
+
+	with open('timesteps.txt', 'w+') as f:
+		f.write(str(avg_timesteps))
 	
 	for _ in range(200):
 		
