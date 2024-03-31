@@ -120,26 +120,9 @@ def Q(obs, event):
 
 def planner_action(s, goal):
 
-	global q, NS, EPSILON, REGIONS_MAP, REGIONS_TRANSITIONS, REGIONS_LABELS
-	plan, nodes = plan_from_world_model(s,goal)
-	
-	if plan == None:
-		return np.random.randint(4)
-	
-	# CHECK IF PLAN REACHES GOAL
-	node = s
-	plan_successful = True
-	
-	for event in plan:
-			#input('ok?')
+	plan = plan_from_world_model(s,goal)
 
-		plan_successful = plan_successful and (np.max(Q(node, event)) > 0)
-		if plan_successful:
-			node = NS[(node,event)]
-		else:
-			break
-
-	if plan_successful and np.random.uniform() >= EPSILON:
+	if np.random.uniform() >= EPSILON and plan != None:
 		
 		return np.argmax(Q(s, plan[0]))
 	
@@ -151,10 +134,10 @@ def planner_action(s, goal):
 
 def plan_from_world_model(s,formula):
 
-	global REGIONS_MAP, REGIONS_TRANSITIONS, REGIONS_LABELS
+	global REGIONS_MAP, REGIONS_TRANSITIONS, REGIONS_LABELS, q, NS
 
 	region = REGIONS_MAP[s]
-	initial_state = (formula, region)
+	initial_state = (formula, region, s)
 
 	queue = [initial_state]
 	visited_set = set()
@@ -166,18 +149,24 @@ def plan_from_world_model(s,formula):
 		
 		node = queue.pop(0)
 		visited_set.add(node)
-		node_formula, node_region = node
+		node_formula, node_region, state = node
 
 
 		for _ ,next_region in [transition for transition in REGIONS_TRANSITIONS if transition[0] == node_region]:
 			
 			next_formula= prog(REGIONS_LABELS[next_region], node_formula)
-			next_node = (next_formula, next_region)
+			event = (node_region, next_region)
+			try:
+				next_state = NS[(state, event)]
+			except:
+				next_state = None
+			next_node = (next_formula, next_region, next_state)
+
 			
-			if next_node not in visited_set:
+			if next_node not in visited_set and (np.max(Q(state, event)) > 0 or next_formula == True):
 				queue.append(next_node)
 
-				parent_dict[next_node] = (node,(node_region, next_region))
+				parent_dict[next_node] = (node,event)
 			if next_formula == True:
 				done = True
 		if done:
@@ -194,17 +183,18 @@ def plan_from_world_model(s,formula):
 		#print(S)
 		plan = []
 		nodes = [S]
+		
 		while(S!= initial_state):
-			#print(S)
+
 			parent, action = parent_dict[S]
 			plan.insert(0, action)
 			nodes.insert(0, parent)
 			S = parent
 		
-		return plan, nodes
+		return plan
 	
 	else:
-		return None, None
+		return None
 
 
 def main():
