@@ -11,6 +11,18 @@ O_GOAL = ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL',
 
 FINAL_GOAL = O_GOAL
 
+
+letters = ['G', 'P', 'B', 'O', 'Y', 'R']
+
+goal_list = []
+for l1 in letters:
+    for l2 in letters:
+        for l3 in letters:
+
+            if l1 != l2 and l2!=l3 and l1!=l3:
+                goal_list.append(eval(f"('UNTIL', 'TRUE', ('AND', '{l1}', ('UNTIL', 'TRUE', ('AND', '{l2}', ('UNTIL', 'TRUE', '{l3}')))))"))
+
+
 class LetterEnv():
 
 
