@@ -201,142 +201,75 @@ def main():
 
 	global EPSILON,q, REGIONS_MAP, REGIONS_TRANSITIONS
 	env = LetterEnv()
-	obs = env.reset()
-	print(env.GOAL)
 	#w = np.zeros(shape = (4,obs.shape[0]))
 	
 	rewards = []
-	times = []
-	avg_rewards = []
-	avg_timesteps = []
-
 	
-	print(N_EPISODES)
-	for ep in range(N_EPISODES):
+	s, info = env.reset()
 
-		s, info = env.reset()
+	sigma  =info['P']
+	goal = info['GOAL']
+	print(f"First goal :{goal}")
 
-		sigma  =info['P']
-		goal = info['GOAL']
-
-		t = 0
-		r_total = 0
-		add_state(s,sigma)
+	t = 0
+	r_total = 0
+	add_state(s,sigma)
 
 		
-		while(t<500):
+	while(t<1000_000):
 
-			# Random action policy
-			#a = np.random.randint(4)
-			# policy by the planner
-			a = planner_action(s, goal)
+		a = planner_action(s, goal)
 			
-			ss, reward, done_ep, info = env.step(a)
-			next_sigma = info['P']
-			next_goal = info['GOAL']
-			#current_event = info['E']
+		ss, reward, done_ep, info = env.step(a)
+		#env.render()
+		#time.sleep(1)
+		next_sigma = info['P']
+		next_goal = info['GOAL']
 
-			add_transition(s,sigma,ss,next_sigma)
+		add_transition(s,sigma,ss,next_sigma)
 
-			current_event = (REGIONS_MAP[s], REGIONS_MAP[ss])
+		current_event = (REGIONS_MAP[s], REGIONS_MAP[ss])
 
 			
-			for ev in REGIONS_TRANSITIONS:
+		for ev in REGIONS_TRANSITIONS:
 
-				done = 0
-				ev_reward = 0
-				if current_event[0]!=current_event[1]:
-					done = 1
-					# Salient event detected
-					if current_event == ev:
-						ev_reward = 1
+			done = 0
+			ev_reward = 0
+			if current_event[0]!=current_event[1]:
+				done = 1
+				# Salient event detected
+				if current_event == ev:
+					ev_reward = 1
 				
 			
-				Q(s,ev)[a] = Q(s,ev)[a] + ALPHA * (ev_reward +  (1- done)*GAMMA*np.max(Q(ss,ev))) - Q(s,ev)[a]
+			Q(s,ev)[a] = Q(s,ev)[a] + ALPHA * (ev_reward +  (1- done)*GAMMA*np.max(Q(ss,ev))) - Q(s,ev)[a]
 
 
-				if done and ev_reward ==1:
-					NS[(ss,ev)] = ss
+			if done and ev_reward ==1:
+				NS[(ss,ev)] = ss
 
-				best_a = np.argmax(Q(s,ev))
-				if a == best_a and Q(s,ev)[a]>0:
-					NS[(s,ev)] = NS[(ss,ev)]
+			best_a = np.argmax(Q(s,ev))
+			if a == best_a and Q(s,ev)[a]>0:
+				NS[(s,ev)] = NS[(ss,ev)]
 			
 			#done = r = int(current_event == event_goal)
 			
-			r_total += reward
+		r_total += reward
 
-			s = ss
-			sigma = next_sigma
-			goal = next_goal
-
-			t+=1
-
-			if done_ep:
-				#print('halolo')
-				break
-
-		rewards.append(r_total)
-		times.append(t)
-		EPSILON = max(EPSILON*DECAY_RATE,0.1)
-		if ep%100==0:
-
-			print(f'EPISODE: {ep}')
-			print(f'REWARD AVG: {np.mean(rewards[-100:])}')
-			avg_rewards.append(np.mean(rewards[-100:]))
-			print(f'TIMESTEP AVG: {np.mean(times[-100:])}')
-			avg_timesteps.append(np.mean(times[-100:]))
-			print(EPSILON)
-
-			print('regions')
-			print(set(REGIONS_MAP.values()))
-			print(REGIONS_TRANSITIONS)
-
-
-
-			cc = 0
-			global q
-			print('----------')
-			for k in q:
-				if q[k].sum()!= 0 :
-					cc+=1
-			#print(sorted(q.keys()))
-			print(f"len_{len(q)}")
-			#print(q.keys())
-			print(f"Q_{cc}")
-
-	
-	s, info = env.reset()
-	sigma  =info['P']
-	goal = info['GOAL']
-
-
-	with open('rewards_option.txt', 'w+') as f:
-		f.write(str(avg_rewards))
-
-
-	with open('timesteps_option.txt', 'w+') as f:
-		f.write(str(avg_timesteps))
-	
-	for _ in range(200):
-		
-
-		a = planner_action(s, goal)
-
-		ss, reward, done, info = env.step(a)
-		
-		env.render()
-		print(s)
-		next_sigma =info['P']
-		next_goal = info['GOAL']
 		s = ss
 		sigma = next_sigma
-		goal = next_goal	
+		goal = next_goal
+
+		t+=1
+		if t%500==0:
+			EPSILON = max(EPSILON*DECAY_RATE,0.1)
 		
-		if done:
-			break		
-		
-		time.sleep(0.33)
+		if reward ==1:
+			rewards.append(t)
+			print(f"Done in t: {t}")
+			print(f"Epsilon: {EPSILON}")
+			print(f"New goal: {env.GOAL}")
+
 
 
 
