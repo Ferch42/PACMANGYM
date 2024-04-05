@@ -43,15 +43,17 @@ class LetterEnv():
 		
 		self.flag = False
 		self.sigma = set()
+		self.goal_list = goal_list
 		self.GOAL = FINAL_GOAL
-		self.propositions =  set(("LIGHT", "SOUND", "MONKEY"))
 
 	def reset(self):
 
 		self.AGENT_POS = (int(self.SIZE/2),int(self.SIZE/2))
 		self.PACMAN_POS = (0,0)
 		self.flag = bool(np.random.randint(2))
+
 		self.GOAL = random.choice(goal_list)
+
 		self.sigma = set()
 		#return self.get_factored_representation()
 		return self.get_discrete_representation(), {'GOAL': self.GOAL, 'P': self.sigma, 'E': 0}
@@ -159,6 +161,8 @@ class LetterEnv():
 
 		if self.GOAL == True:
 			reward = 1
+			if len(self.goal_list) > 0:
+				self.GOAL = self.goal_list.pop(0)
 
 		#return self.get_factored_representation(),reward, type(self.GOAL) == bool, {'GOAL': self.GOAL, 'P': P, 'E': event} 
 		return self.get_discrete_representation(),reward, type(self.GOAL) == bool, {'GOAL': self.GOAL, 'P': P, 'E': event} 
@@ -190,6 +194,8 @@ class LetterEnv():
 if __name__ == '__main__':
 	
 	env = LetterEnv()
+	env.reset()
+	print(env.GOAL)
 
 	for i in range(100):
 
