@@ -122,7 +122,7 @@ def planner_action(s, goal):
 
 	plan = plan_from_world_model(s,goal)
 
-	if np.random.uniform() >= EPSILON and plan != None:
+	if plan != None:
 		
 		return np.argmax(Q(s, plan[0]))
 	

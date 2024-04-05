@@ -2,6 +2,7 @@ import os
 import time
 import numpy as np
 from LTL import prog
+import random
 
 clear = lambda: os.system('cls')
 
@@ -10,6 +11,19 @@ P_GOAL = ("UNTIL", "TRUE", ('AND', 'P', ('UNTIL', 'TRUE', 'B')))
 O_GOAL = ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL', 'TRUE', 'P')))))
 
 FINAL_GOAL = O_GOAL
+
+
+
+letters = ['G', 'P', 'B', 'O', 'Y', 'R']
+
+goal_list = []
+for l1 in letters:
+    for l2 in letters:
+        for l3 in letters:
+
+            if l1 != l2 and l2!=l3 and l1!=l3:
+                goal_list.append(eval(f"('UNTIL', 'TRUE', ('AND', '{l1}', ('UNTIL', 'TRUE', ('AND', '{l2}', ('UNTIL', 'TRUE', '{l3}')))))"))
+
 
 class LetterEnv():
 
@@ -37,7 +51,7 @@ class LetterEnv():
 		self.AGENT_POS = (int(self.SIZE/2),int(self.SIZE/2))
 		self.PACMAN_POS = (0,0)
 		self.flag = bool(np.random.randint(2))
-		self.GOAL = FINAL_GOAL
+		self.GOAL = random.choice(goal_list)
 		self.sigma = set()
 		#return self.get_factored_representation()
 		return self.get_discrete_representation(), {'GOAL': self.GOAL, 'P': self.sigma, 'E': 0}
