@@ -2,6 +2,7 @@ import os
 import time
 import numpy as np
 from LTL import prog
+import random
 
 clear = lambda: os.system('cls')
 
@@ -11,21 +12,33 @@ O_GOAL = ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL',
 
 FINAL_GOAL = O_GOAL
 
+letters = ['G', 'P', 'B', 'O', 'Y', 'R']
+
+goal_list = []
+for l1 in letters:
+    for l2 in letters:
+        for l3 in letters:
+
+            if l1 != l2 and l2!=l3 and l1!=l3:
+                goal_list.append(eval(f"('UNTIL', 'TRUE', ('AND', '{l1}', ('UNTIL', 'TRUE', ('AND', '{l2}', ('UNTIL', 'TRUE', '{l3}')))))"))
+
+
+
 class LetterEnv():
 
 
 	def __init__(self):
 	# Configuration Vars
-		self.SIZE = 20
-		self.AGENT_POS = (int(self.SIZE/2),int(self.SIZE/2))
+		self.SIZE = 11
+		self.AGENT_POS = (5,5)
 		# UPPER SIDE BUTTONS
-		self.GREEN_BTN_POS = (int(self.SIZE/4),int(self.SIZE/4))
-		self.RED_BTN_POS = (int(self.SIZE/4),int(self.SIZE/2))
-		self.BLUE_BTN_POS = (int(self.SIZE/4),3*int(self.SIZE/4))
+		self.GREEN_BTN_POS = (0,0)
+		self.RED_BTN_POS = (0,5)
+		self.BLUE_BTN_POS = (0,10)
 		# LOWER SIDE BUTTONS
-		self.PURPLE_BTN_POS = (int(3*self.SIZE/4),int(self.SIZE/4))
-		self.ORANGE_BTN_POS = (int(3*self.SIZE/4),int(self.SIZE/2))
-		self.YELLOW_BTN_POS = (int(3*self.SIZE/4),3*int(self.SIZE/4))
+		self.PURPLE_BTN_POS = (10,0)
+		self.ORANGE_BTN_POS = (10,5)
+		self.YELLOW_BTN_POS = (10,10)
 		
 		self.flag = False
 		self.sigma = set()
@@ -37,7 +50,7 @@ class LetterEnv():
 		self.AGENT_POS = (int(self.SIZE/2),int(self.SIZE/2))
 		self.PACMAN_POS = (0,0)
 		self.flag = bool(np.random.randint(2))
-		self.GOAL = FINAL_GOAL
+		self.GOAL = random.choice(goal_list)
 		self.sigma = set()
 		#return self.get_factored_representation()
 		return self.get_discrete_representation(), {'GOAL': self.GOAL, 'P': self.sigma, 'E': 0}

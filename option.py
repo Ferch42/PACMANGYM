@@ -114,8 +114,6 @@ def Q(obs, event):
 	#print(s)
 	if s not in q:
 		q[s] = np.zeros(4)
-		if event == -1:
-			q[s] = q[s]+1
 
 	return q[s]
 
@@ -129,7 +127,7 @@ def planner_action(s, goal):
 		return np.argmax(Q(s, plan[0]))
 	
 	else:
-		return np.argmax(Q(s, -1))
+		return np.random.randint(4)
 
 
 
@@ -208,7 +206,7 @@ def main():
 		add_state(s,sigma)
 		print(f"SOLVING GOAL: {goal} ")
 		
-		while(t<500):
+		while(True):
 
 			# Random action policy
 			#a = np.random.randint(4)
@@ -224,8 +222,6 @@ def main():
 			add_transition(s,sigma,ss,next_sigma)
 
 			current_event = (REGIONS_MAP[s], REGIONS_MAP[ss])
-
-			Q(s, -1)[a] = Q(s,-1)[a] + ALPHA * (0 +  GAMMA*np.max(Q(ss,-1))) - Q(s,-1)[a]
 
 			
 			for ev in REGIONS_TRANSITIONS:
