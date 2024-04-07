@@ -114,6 +114,8 @@ def Q(obs, event):
 	#print(s)
 	if s not in q:
 		q[s] = np.zeros(4)
+		if event == -1:
+			q[s] = q[s]+1
 
 	return q[s]
 
@@ -122,12 +124,12 @@ def planner_action(s, goal):
 
 	plan = plan_from_world_model(s,goal)
 
-	if np.random.uniform() >= EPSILON and plan != None:
+	if plan != None:
 		
 		return np.argmax(Q(s, plan[0]))
 	
 	else:
-		return np.random.randint(4)
+		return np.argmax(Q(s, -1))
 
 
 
@@ -137,19 +139,24 @@ def plan_from_world_model(s,formula):
 	global REGIONS_MAP, REGIONS_TRANSITIONS, REGIONS_LABELS, q, NS
 
 	region = REGIONS_MAP[s]
-	initial_state = (formula, region, s)
+	initial_state = [formula, region, s, []]
 
 	queue = [initial_state]
 	visited_set = set()
 	
-	parent_dict = {}
 
 	done = False
 	while len(queue)>0:
 		
 		node = queue.pop(0)
-		visited_set.add(node)
-		node_formula, node_region, state = node
+		
+		node_formula, node_region, state, plan = node
+
+		visited_set.add((node_formula, node_region, state))
+		
+		if node_formula == True:
+			done = True
+			return plan
 
 
 		for _ ,next_region in [transition for transition in REGIONS_TRANSITIONS if transition[0] == node_region]:
@@ -160,41 +167,18 @@ def plan_from_world_model(s,formula):
 				next_state = NS[(state, event)]
 			except:
 				next_state = None
-			next_node = (next_formula, next_region, next_state)
+			next_node = [next_formula, next_region, next_state, plan.copy() + [event]]
 
 			
-			if next_node not in visited_set and (np.max(Q(state, event)) > 0 or next_formula == True):
+			if (next_formula, next_region, next_state) not in visited_set and (np.max(Q(state, event)) > 0):
 				queue.append(next_node)
 
-				parent_dict[next_node] = (node,event)
-			if next_formula == True:
-				done = True
+
 		if done:
 			break
 				
-	if done:
-		# Walk back from goal to start
-		true_formula = None
-		
-		for k in parent_dict:
-			if k[0]== True:
-				true_formula = k
-		S = true_formula
-		#print(S)
-		plan = []
-		nodes = [S]
-		
-		while(S!= initial_state):
-
-			parent, action = parent_dict[S]
-			plan.insert(0, action)
-			nodes.insert(0, parent)
-			S = parent
-		
-		return plan
 	
-	else:
-		return None
+	return None
 
 
 def main():
@@ -205,10 +189,10 @@ def main():
 	print(env.GOAL)
 	#w = np.zeros(shape = (4,obs.shape[0]))
 	
-	rewards = []
-	times = []
-	avg_rewards = []
-	avg_timesteps = []
+	rewards = [0]
+	times = [0]
+	avg_rewards = [0]
+	avg_timesteps = [0]
 
 	
 	print(N_EPISODES)
@@ -222,7 +206,7 @@ def main():
 		t = 0
 		r_total = 0
 		add_state(s,sigma)
-
+		print(f"SOLVING GOAL: {goal} ")
 		
 		while(t<500):
 
@@ -232,6 +216,7 @@ def main():
 			a = planner_action(s, goal)
 			
 			ss, reward, done_ep, info = env.step(a)
+			#print(goal)
 			next_sigma = info['P']
 			next_goal = info['GOAL']
 			#current_event = info['E']
@@ -239,6 +224,8 @@ def main():
 			add_transition(s,sigma,ss,next_sigma)
 
 			current_event = (REGIONS_MAP[s], REGIONS_MAP[ss])
+
+			Q(s, -1)[a] = Q(s,-1)[a] + ALPHA * (0 +  GAMMA*np.max(Q(ss,-1))) - Q(s,-1)[a]
 
 			
 			for ev in REGIONS_TRANSITIONS:
@@ -272,38 +259,30 @@ def main():
 
 			t+=1
 
+			if t%10_000==0:
+
+				print(f'EPISODE: {ep}')
+				print(f'REWARD AVG: {np.mean(rewards[-100:])}')
+				avg_rewards.append(np.mean(rewards[-100:]))
+				print(f'TIMESTEP AVG: {np.mean(times[-100:])}')
+				avg_timesteps.append(np.mean(times[-100:]))
+				print(goal)
+
+				print('regions')
+				print(set(REGIONS_MAP.values()))
+				print(REGIONS_TRANSITIONS)
+				print([x for x in REGIONS_LABELS.items() if x[1]!=set()])
+
+
 			if done_ep:
+				print(f"DONE IN {t}")
 				#print('halolo')
 				break
 
 		rewards.append(r_total)
 		times.append(t)
 		EPSILON = max(EPSILON*DECAY_RATE,0.1)
-		if ep%100==0:
-
-			print(f'EPISODE: {ep}')
-			print(f'REWARD AVG: {np.mean(rewards[-100:])}')
-			avg_rewards.append(np.mean(rewards[-100:]))
-			print(f'TIMESTEP AVG: {np.mean(times[-100:])}')
-			avg_timesteps.append(np.mean(times[-100:]))
-			print(EPSILON)
-
-			print('regions')
-			print(set(REGIONS_MAP.values()))
-			print(REGIONS_TRANSITIONS)
-
-
-
-			cc = 0
-			global q
-			print('----------')
-			for k in q:
-				if q[k].sum()!= 0 :
-					cc+=1
-			#print(sorted(q.keys()))
-			print(f"len_{len(q)}")
-			#print(q.keys())
-			print(f"Q_{cc}")
+		
 
 	
 	s, info = env.reset()
