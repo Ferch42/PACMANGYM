@@ -22,6 +22,7 @@ for l1 in letters:
             if l1 != l2 and l2!=l3 and l1!=l3:
                 goal_list.append(eval(f"('UNTIL', 'TRUE', ('AND', '{l1}', ('UNTIL', 'TRUE', ('AND', '{l2}', ('UNTIL', 'TRUE', '{l3}')))))"))
 
+goal_list = goal_list[0:5]
 
 
 class LetterEnv():
@@ -44,13 +45,15 @@ class LetterEnv():
 		self.sigma = set()
 		self.GOAL = FINAL_GOAL
 		self.propositions =  set(("LIGHT", "SOUND", "MONKEY"))
+		self.index = 0
 
 	def reset(self):
 
 		self.AGENT_POS = (int(self.SIZE/2),int(self.SIZE/2))
 		self.PACMAN_POS = (0,0)
 		self.flag = bool(np.random.randint(2))
-		self.GOAL = random.choice(goal_list)
+		self.GOAL = goal_list[self.index]
+		self.index = (self.index+1)%(len(goal_list))
 		self.sigma = set()
 		#return self.get_factored_representation()
 		return self.get_discrete_representation(), {'GOAL': self.GOAL, 'P': self.sigma, 'E': 0}

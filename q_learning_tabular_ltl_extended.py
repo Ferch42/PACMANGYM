@@ -7,7 +7,7 @@ from ltl_graph_generator import *
 
 ALPHA = 0.1
 GAMMA = 0.99
-DECAY_RATE = 0.99995
+DECAY_RATE = 0.9999
 EPSILON = 1
 
 N_EPISODES = 100_000
@@ -85,7 +85,7 @@ def main():
 
 			# E-greedy
 			a = np.argmax(Q(s, goal))
-			if np.max(Q(s,goal))==0 or np.random.uniform()>EPSILON:
+			if np.max(Q(s,goal))==0 or np.random.uniform()> 0.1:
 				a = np.random.randint(4)
 
 			#print('in state', s,sigma, goal)
