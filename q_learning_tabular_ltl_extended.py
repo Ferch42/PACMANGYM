@@ -7,10 +7,10 @@ from ltl_graph_generator import *
 
 ALPHA = 0.1
 GAMMA = 0.99
-DECAY_RATE = 0.9999
+DECAY_RATE = 0.99995
 EPSILON = 1
 
-N_EPISODES = 20_000
+N_EPISODES = 100_000
 
 q = {}
 
@@ -20,6 +20,29 @@ FORMULA_VALUE_DICT = {True : 0 ,
 					  ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL', 'TRUE', 'P'))))): 0.81}
 					  
 REWARD_SHAPPING = True
+
+
+letters = ['G', 'P', 'B', 'O', 'Y', 'R']
+
+goal_list = []
+for l1 in letters:
+	for l2 in letters:
+
+		for l3 in letters:
+			
+			if l1 != l2 and l2!=l3 and l1!=l3:
+				g_formula = eval(f"('UNTIL', 'TRUE', ('AND', '{l1}', ('UNTIL', 'TRUE', ('AND', '{l2}', ('UNTIL', 'TRUE', '{l3}')))))")
+				FORMULA_VALUE_DICT[g_formula] = 0.81
+
+				f_formula = eval(f"('UNTIL', 'TRUE', ('AND', '{l2}', ('UNTIL', 'TRUE', '{l3}')))")
+				FORMULA_VALUE_DICT[f_formula] = 0.81
+
+				h_formula = eval(f"('UNTIL', 'TRUE', '{l3}')")
+				FORMULA_VALUE_DICT[h_formula] = 1
+			
+
+
+print(FORMULA_VALUE_DICT)
 
 
 def Q(obs, g):
@@ -53,15 +76,16 @@ def main():
 
 		s, info = env.reset()
 		goal = info['GOAL']
+		#print(f"SOLVING GOAL: {goal} ")
 
 		
 		t = 0
 		r_total = 0
-		while(t<500):
+		while(True):
 
 			# E-greedy
 			a = np.argmax(Q(s, goal))
-			if np.random.uniform() < EPSILON:
+			if np.max(Q(s,goal))==0 or np.random.uniform()>EPSILON:
 				a = np.random.randint(4)
 
 			#print('in state', s,sigma, goal)
@@ -85,6 +109,7 @@ def main():
 
 			if done:
 				#print('halolo')
+				#print(f"DONE IN {np.mean(times[-100:])}")
 				break
 
 		rewards.append(r_total)
@@ -128,23 +153,6 @@ def main():
 	with open('timesteps.txt', 'w+') as f:
 		f.write(str(avg_timesteps))
 	
-	for _ in range(200):
-		
-		a = np.argmax(Q(s, goal))
-
-		ss, reward, done, info = env.step(a)
-		
-		env.render()
-
-		next_goal = info['GOAL']
-		s = ss
-		goal = next_goal	
-		
-		if done:
-			break		
-		
-		time.sleep(0.33)
-
 
 
 
