@@ -22,7 +22,8 @@ for l1 in letters:
             if l1 != l2 and l2!=l3 and l1!=l3:
                 goal_list.append(eval(f"('UNTIL', 'TRUE', ('AND', '{l1}', ('UNTIL', 'TRUE', ('AND', '{l2}', ('UNTIL', 'TRUE', '{l3}')))))"))
 
-goal_list = goal_list[0:5]
+#goal_list = goal_list[0:5]
+print(len(goal_list))
 
 
 class LetterEnv():

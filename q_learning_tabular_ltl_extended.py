@@ -76,7 +76,7 @@ def main():
 
 		s, info = env.reset()
 		goal = info['GOAL']
-		#print(f"SOLVING GOAL: {goal} ")
+		print(f"SOLVING GOAL: {goal} ")
 
 		
 		t = 0
@@ -109,7 +109,7 @@ def main():
 
 			if done:
 				#print('halolo')
-				#print(f"DONE IN {np.mean(times[-100:])}")
+				print(f"DONE IN {np.mean(times[-100:])}")
 				break
 
 		rewards.append(r_total)
