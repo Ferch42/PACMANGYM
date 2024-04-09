@@ -19,7 +19,7 @@ FORMULA_VALUE_DICT = {True : 0 ,
 					  ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL', 'TRUE', 'P'))): 0.9, 
 					  ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL', 'TRUE', 'P'))))): 0.81}
 					  
-REWARD_SHAPPING = True
+REWARD_SHAPPING = False
 
 
 letters = ['G', 'P', 'B', 'O', 'Y', 'R']
