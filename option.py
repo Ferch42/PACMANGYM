@@ -10,7 +10,7 @@ GAMMA = 0.99
 DECAY_RATE = 0.9999
 EPSILON = 1
 
-N_EPISODES = 20_000
+N_EPISODES = 120
 
 q = {}
 NS = {}
@@ -187,10 +187,10 @@ def main():
 	print(env.GOAL)
 	#w = np.zeros(shape = (4,obs.shape[0]))
 	
-	rewards = [0]
-	times = [0]
-	avg_rewards = [0]
-	avg_timesteps = [0]
+	rewards = []
+	times = []
+	avg_rewards = []
+	avg_timesteps = []
 
 	
 	print(N_EPISODES)
@@ -286,12 +286,8 @@ def main():
 	goal = info['GOAL']
 
 
-	with open('rewards_option.txt', 'w+') as f:
-		f.write(str(avg_rewards))
-
-
 	with open('timesteps_option.txt', 'w+') as f:
-		f.write(str(avg_timesteps))
+		f.write(str(times))
 	
 	for _ in range(200):
 		

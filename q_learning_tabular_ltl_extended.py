@@ -10,7 +10,7 @@ GAMMA = 0.99
 DECAY_RATE = 0.9999
 EPSILON = 1
 
-N_EPISODES = 100_000
+N_EPISODES = 120
 
 q = {}
 
@@ -85,7 +85,7 @@ def main():
 
 			# E-greedy
 			a = np.argmax(Q(s, goal))
-			if np.max(Q(s,goal))==0 or np.random.uniform()> 0.1:
+			if np.random.uniform()> 0.1:
 				a = np.random.randint(4)
 
 			#print('in state', s,sigma, goal)
@@ -109,7 +109,7 @@ def main():
 
 			if done:
 				#print('halolo')
-				print(f"DONE IN {np.mean(times[-100:])}")
+				print(f"DONE IN {np.mean(times[-20:])}")
 				break
 
 		rewards.append(r_total)
@@ -151,7 +151,7 @@ def main():
 
 
 	with open('timesteps.txt', 'w+') as f:
-		f.write(str(avg_timesteps))
+		f.write(str(times))
 	
 
 
