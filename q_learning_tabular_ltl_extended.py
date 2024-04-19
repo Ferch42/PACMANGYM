@@ -2,6 +2,7 @@ from env import PacmanEnv
 from letter_env import LetterEnv
 import numpy as np
 import time
+import random
 from ltl_graph_generator import *
 
 
@@ -19,7 +20,7 @@ FORMULA_VALUE_DICT = {True : 0 ,
 					  ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL', 'TRUE', 'P'))): 0.9, 
 					  ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL', 'TRUE', 'P'))))): 0.81}
 					  
-REWARD_SHAPPING = False
+REWARD_SHAPPING = True
 
 
 letters = ['G', 'P', 'B', 'O', 'Y', 'R']
@@ -84,7 +85,14 @@ def main():
 		while(True):
 
 			# E-greedy
-			a = np.argmax(Q(s, goal))
+			#a = np.argmax(Q(s, goal))
+			best_a = []
+			q_max = np.max(Q(s,goal))
+			for action in range(4):
+				if q_max == Q(s,goal)[action]:
+					best_a.append(action)
+			
+			a = random.choice(best_a)
 			if np.random.uniform()> 0.1:
 				a = np.random.randint(4)
 
