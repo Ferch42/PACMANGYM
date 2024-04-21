@@ -24,7 +24,7 @@ for l1 in letters:
 
 #goal_list = goal_list[0:5]
 print(len(goal_list))
-goal_list = goal_list[0:1]
+#goal_list = goal_list[0:1]
 
 class LetterEnv():
 

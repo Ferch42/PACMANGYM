@@ -20,7 +20,7 @@ FORMULA_VALUE_DICT = {True : 0 ,
 					  ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL', 'TRUE', 'P'))): 0.9, 
 					  ('UNTIL', 'TRUE', ('AND', 'P', ('UNTIL', 'TRUE', ('AND', 'B', ('UNTIL', 'TRUE', 'P'))))): 0.81}
 					  
-REWARD_SHAPPING = True
+REWARD_SHAPPING = True	
 
 
 letters = ['G', 'P', 'B', 'O', 'Y', 'R']
@@ -93,9 +93,9 @@ def main():
 					best_a.append(action)
 			
 			a = random.choice(best_a)
-			if np.random.uniform()> 0.1:
+			if np.random.uniform()< 0.1:
 				a = np.random.randint(4)
-
+			#EPSILON = max(EPSILON*DECAY_RATE,0.1)
 			#print('in state', s,sigma, goal)
 			ss, reward, done, info = env.step(a)
 			next_goal = info['GOAL']
@@ -118,11 +118,12 @@ def main():
 			if done:
 				#print('halolo')
 				print(f"DONE IN {np.mean(times[-20:])}")
+				print(f"EPSILON = {EPSILON}")
 				break
 
 		rewards.append(r_total)
 		times.append(t)
-		EPSILON = max(EPSILON*DECAY_RATE,0.1)
+		
 		if ep%100==0:
 
 			print(f'EPISODE: {ep}')
