@@ -41,7 +41,7 @@ class PatchEnv():
 	
 	def reset(self):
 
-		self.AGENT_POS = (int(self.SIZE/2),int(self.SIZE/2))
+		self.__init__()
 		
 		return self.get_discrete_representation(), {'GOAL': self.GOAL, 'P': self.sigma, 'E': 0}
 		
@@ -93,27 +93,36 @@ class PatchEnv():
 		self.AGENT_POS = (max(min(self.SIZE-1,self.AGENT_POS[0]),0), max(min(self.SIZE-1,self.AGENT_POS[1]),0))
 
 		patch_flag = False
+		P = set()
+
 		for patch_number, patch in enumerate(self.patches):
 
 			if patch.contains_coordinate(self.AGENT_POS):
 				self.patch_index = patch_number
-				self.P = patch.sigma
+				P = patch.sigma
 				patch_flag = True
 		
 		if not patch_flag:
-			self.P = set()
+			P = set()
 			self.patch_index = None
 
 		reward = 0
 
+		event = ''
+		if P != self.sigma:
+			# An event occurred 
+			event = str(self.sigma) + str(P)
+			self.sigma  = P
+			
 
-		self.GOAL = prog(self.P, self.GOAL)
+
+		self.GOAL = prog(self.sigma, self.GOAL)
 
 		if self.GOAL == True:
 			reward = 1
 
 		#return self.get_factored_representation(),reward, type(self.GOAL) == bool, {'GOAL': self.GOAL, 'P': P, 'E': event} 
-		return self.get_discrete_representation(),reward, type(self.GOAL) == bool, {'GOAL': self.GOAL, 'P': self.P, 'E': 0} 
+		return self.get_discrete_representation(),reward, type(self.GOAL) == bool, {'GOAL': self.GOAL, 'P': self.sigma, 'E': event} 
 
 
 	def get_factored_representation(self):
