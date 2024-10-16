@@ -120,7 +120,7 @@ def main():
 								V[(s, event_key, ttt)]  = 1
 							
 							if not done and ttt<TIME_HORIZON-1 and (ss, event_key, ttt+1) in V.keys():
-								V[(s, event_key, ttt)]  = V[(ss, event_key, ttt+1)]
+								V[(s, event_key, ttt)]  = V[(s, event_key, ttt)] + 0.1 *(V[(ss, event_key, ttt+1)]- V[(s, event_key, ttt)])
 
 
 				
