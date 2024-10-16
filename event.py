@@ -8,10 +8,17 @@ class Event():
 
     def __str__(self) -> str:
         
-        return str(self.previous_sigma) + str(self.next_sigma)
+        return str(list(sorted(self.previous_sigma))) + str(list(sorted(self.next_sigma)))
+    
+    def __eq__(self, other) -> bool:
+        
+        return (self.previous_sigma == other.previous_sigma) and (self.next_sigma == other.next_sigma)
 
 
 if __name__ == '__main__':
     e = Event(set(), set({'A'}))
+    eee = Event(set(), set({'A'}))
+    
     print(e)
-        
+
+    print(e==eee)    

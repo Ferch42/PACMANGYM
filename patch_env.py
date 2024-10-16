@@ -3,6 +3,7 @@ import time
 import numpy as np
 from LTL import prog
 import random
+from event import Event
 
 clear = lambda: os.system('cls')
 
@@ -108,10 +109,10 @@ class PatchEnv():
 
 		reward = 0
 
-		event = ''
+		event = Event(set(), set())
 		if P != self.sigma:
 			# An event occurred 
-			event = str(self.sigma) + str(P)
+			event = Event(self.sigma, P)
 			self.sigma  = P
 			
 
