@@ -14,7 +14,8 @@ TIME_HORIZON = 20
 N_EPISODES = 1200
 
 q = {}
-NS = {}
+F = {}
+V = {}
 
 EVENT_DICT = {}
 
@@ -56,7 +57,10 @@ def main():
 
 		t = 0
 		r_total = 0
-		
+		if (s, "[]['A']", 0) in F.keys():
+			print('------------------------')
+			print(F[(s, "[]['A']", 0)])	
+			print(V[(s, "[]['A']", 0)])
 		while(True):
 
 			# Random action policy
@@ -78,17 +82,48 @@ def main():
 
 			
 			for event_key, event in EVENT_DICT.items():
-
-				done = 0
-				ev_reward = 0
-				if current_event == event:
-					done = 1
-					# Salient event detected
-					if current_event == event:
-						ev_reward = 1
 				
-			
-				Q(s,event_key)[a] = Q(s,event_key)[a] + ALPHA * (ev_reward +  (1- done)*GAMMA*np.max(Q(ss,event_key))) - Q(s,event_key)[a]
+				if sigma == event.previous_sigma:
+					# Validity constraint
+					# Perceived sigma must be equal to the event initiation sigma
+					done = 0
+					ev_reward = 0
+					if current_event != EMPTY_EVENT:
+						done = 1
+						# Salient event detected
+						if current_event == event:
+							ev_reward = 1
+					
+				
+					Q(s,event_key)[a] = Q(s,event_key)[a] + ALPHA * (ev_reward +  (1- done)*GAMMA*np.max(Q(ss,event_key))) - Q(s,event_key)[a]
+
+					best_a = np.argmax(Q(s,event_key))
+					
+					if a == best_a:
+
+						F[(s, event_key, TIME_HORIZON-1)] = ss
+						F[(ss, event_key,  TIME_HORIZON)] = ss
+
+						for tt in reversed(range(TIME_HORIZON-1)):
+							if done:
+								F[(s, event_key , tt)] = ss
+								F[(ss, event_key, tt+1)] = ss
+							else:
+								if (ss, event_key, tt+1) in F.keys():
+									F[(s, event_key, tt)] = F[(ss, event_key, tt+1)]
+
+						for ttt in reversed(range(TIME_HORIZON)):
+							if (s,event_key, ttt) not in V.keys():
+								V[(s, event_key, ttt)] = 0
+							
+							if done and ev_reward == 1:
+								V[(s, event_key, ttt)]  = 1
+							
+							if not done and ttt<TIME_HORIZON-1 and (ss, event_key, ttt+1) in V.keys():
+								V[(s, event_key, ttt)]  = V[(ss, event_key, ttt+1)]
+
+
+				
 
 				"""
 				if done and ev_reward ==1:
@@ -118,12 +153,14 @@ def main():
 				print(goal)
 				print("Q value estimates")
 				print(sum([x.sum() for x in q.values()]))
-				print(EVENT_DICT.keys())	
+				print(EVENT_DICT.keys())
+				
 
 
 			if done_ep:
 				print(f"DONE IN {t}")
-				#print('halolo')
+				print('Final STATE')
+				print(s)
 				break
 
 		rewards.append(r_total)
