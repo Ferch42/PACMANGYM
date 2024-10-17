@@ -21,7 +21,6 @@ EVENT_DICT = {}
 
 EMPTY_EVENT = Event(set(), set())
 
-
 def Q(obs, g):
 
 	global q
