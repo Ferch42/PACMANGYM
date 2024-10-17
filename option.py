@@ -59,7 +59,9 @@ def main():
 		r_total = 0
 		if (s, "[]['A']", 0) in F.keys():
 			print('------------------------')
-			print(F[(s, "[]['A']", 0)].argmax())	
+			print("F")
+			print(F[(s, "[]['A']", 0)].argmax())
+			print(F[(s, "[]['A']", 0)][F[(s, "[]['A']", 0)].argmax()])	
 			print(V[(s, "[]['A']", 0)])
 
 		env_size = env.SIZE*env.SIZE
