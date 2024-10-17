@@ -59,8 +59,10 @@ def main():
 		r_total = 0
 		if (s, "[]['A']", 0) in F.keys():
 			print('------------------------')
-			print(F[(s, "[]['A']", 0)])	
+			print(F[(s, "[]['A']", 0)].argmax())	
 			print(V[(s, "[]['A']", 0)])
+
+		env_size = env.SIZE*env.SIZE
 		while(True):
 
 			# Random action policy
@@ -100,24 +102,35 @@ def main():
 					best_a = np.argmax(Q(s,event_key))
 					
 					if a == best_a:
-
-						F[(s, event_key, TIME_HORIZON-1)] = ss
-						F[(ss, event_key,  TIME_HORIZON)] = ss
+						
+						if (s,event_key, TIME_HORIZON-1) not in F.keys():
+							F[(s, event_key, TIME_HORIZON-1)] = np.zeros(env_size)
+						
+						target = np.zeros(env_size)
+						target[ss] = 1
+						
+						F[(s, event_key, TIME_HORIZON-1)] = F[(s, event_key, TIME_HORIZON-1)] + 0.1 * (target  - F[(s, event_key, TIME_HORIZON-1)])
 
 						for tt in reversed(range(TIME_HORIZON-1)):
+
+							if (s,event_key, tt) not in F.keys():
+								F[(s, event_key, tt)] = np.zeros(env_size)
+
 							if done:
-								F[(s, event_key , tt)] = ss
-								F[(ss, event_key, tt+1)] = ss
+								target = np.zeros(env_size)
+								target[ss] = 1
+								F[(s, event_key , tt)] = F[(s, event_key , tt)] + 0.1 * (target  - F[(s, event_key , tt)])
+								
 							else:
 								if (ss, event_key, tt+1) in F.keys():
-									F[(s, event_key, tt)] = F[(ss, event_key, tt+1)]
+									F[(s, event_key, tt)] = F[(s, event_key, tt)] + 0.1 *(F[(ss, event_key, tt+1)]- F[(s, event_key, tt)])
 
 						for ttt in reversed(range(TIME_HORIZON)):
 							if (s,event_key, ttt) not in V.keys():
 								V[(s, event_key, ttt)] = 0
 							
 							if done and ev_reward == 1:
-								V[(s, event_key, ttt)]  = 1
+								V[(s, event_key, ttt)]  = V[(s, event_key, ttt)] + 0.1 *(1- V[(s, event_key, ttt)])
 							
 							if not done and ttt<TIME_HORIZON-1 and (ss, event_key, ttt+1) in V.keys():
 								V[(s, event_key, ttt)]  = V[(s, event_key, ttt)] + 0.1 *(V[(ss, event_key, ttt+1)]- V[(s, event_key, ttt)])
