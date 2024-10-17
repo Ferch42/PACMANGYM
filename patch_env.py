@@ -34,7 +34,7 @@ class PatchEnv():
 	# Configuration Vars
 		self.SIZE = 50
 		self.AGENT_POS = (int(self.SIZE/2), int(self.SIZE/2))
-		self.patches = [Patch((0,0), (20,20), set({'A'})), Patch((30,30), (40,40), set({'B'}))]
+		self.patches = [Patch((0,0), (10,10), set({'A'})), Patch((10,0), (20,10), set({'C'})), Patch((0,10), (20,20), set({'C'})), Patch((30,30), (40,40), set({'B'})) , Patch((30,40), (45,45), set({'D'}))]
 		self.sigma = set()
 		self.GOAL = ("UNTIL", "TRUE", "A")
 		self.patch_index = None
