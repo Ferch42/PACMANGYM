@@ -31,6 +31,57 @@ def Q(obs, g):
 
 	return q[s]
 
+def meta_planner(s, sigma, goal):
+
+	global EVENT_DICT, F, V
+
+	initial_state = [s, sigma, goal, []]
+	queue = [initial_state]
+	visited_set = set()
+
+	done = False
+
+	final_plan = None
+
+	while(len(queue)>0):
+
+		print(queue)
+		node = queue.pop(0)
+		s, sigma, goal, plan = node
+		visited_set.add((s, str(list(sorted(sigma))), goal))
+
+		if goal == True:
+			done = True
+			final_plan = plan
+
+		for ev in [x for x in EVENT_DICT.values() if x.previous_sigma == sigma]:
+			print(ev)
+			next_goal = prog(ev.next_sigma, goal)
+
+			try:
+				ss = F[(s, str(ev), 0)].argmax()
+			except:
+				ss = None
+
+			next_node = [ss, ev.next_sigma, next_goal, plan.copy() + [str(ev)]]
+			try:
+
+				if (ss, str(list(sorted(ev.next_sigma))), next_goal) not in visited_set and V[(s, str(ev), 0)]>0:
+
+					queue.append(next_node)
+			except:
+				pass
+
+		if done:
+			break
+	
+	print(final_plan)
+
+
+
+	
+	return np.random.randint(4)
+
 
 def main():
 
@@ -62,15 +113,20 @@ def main():
 			print(F[(s, "[]['A']", 0)].argmax())
 			print(F[(s, "[]['A']", 0)][F[(s, "[]['A']", 0)].argmax()])	
 			print(V[(s, "[]['A']", 0)])
-
+		
+		if ep%10==0:
+			print("debugging metaplanner")
+			meta_planner(s, sigma, goal)
+		
 		env_size = env.SIZE*env.SIZE
 		while(True):
 
 			# Random action policy
-			if np.random.uniform() < 1-(ep/N_EPISODES):
+			if np.random.uniform() <1 : #1-(ep/N_EPISODES):
 				a = np.random.randint(4)
 			else:
 				a = Q(s, "[]['A']").argmax()
+				
 
 
 			ss, reward, done_ep, info = env.step(a)
