@@ -11,7 +11,7 @@ DECAY_RATE = 0.99
 EPSILON = 1
 TIME_HORIZON = 20
 
-N_EPISODES = 1200
+N_EPISODES = 100
 
 q = {}
 F = {}
@@ -78,6 +78,9 @@ def meta_planner(s, sigma, goal):
 
 	if final_plan != None:
 		first_event = final_plan[0]
+		print(final_plan)
+		print(str(first_event))
+		print(Q(s,str(first_event)))
 
 		return Q(s,str(first_event)).argmax()
 	
