@@ -76,14 +76,13 @@ def meta_planner(s, sigma, goal):
 			except:
 				pass
 
+	if final_plan != None:
+		first_event = final_plan[0]
+
+		return Q(s,str(first_event)).argmax()
 	
-	print(final_plan)
-
-
-
-	
-	return np.random.randint(4)
-
+	else:
+		return np.random.randint(4)
 
 def main():
 
@@ -124,7 +123,7 @@ def main():
 		while(True):
 
 			# Random action policy
-			if np.random.uniform() <1 : #1-(ep/N_EPISODES):
+			if np.random.uniform() < 1-(ep/N_EPISODES):
 				a = Q(s, 'exploratory_policy',  one_initialization = True).argmax()
 				#print(Q(s, 'exploratory_policy'))
 			else:
@@ -138,7 +137,7 @@ def main():
 			next_goal = info['GOAL']
 			current_event = info['E']
 
-			Q(s, 'exploratory_policy')[a] = Q(s, 'exploratory_policy')[a] + 0.99 * (0 +  GAMMA*np.max(Q(ss, 'exploratory_policy', one_initialization = True)) - Q(s, 'exploratory_policy')[a])
+			Q(s, 'exploratory_policy')[a] = Q(s, 'exploratory_policy')[a] + 0.1 * (0 +  GAMMA*np.max(Q(ss, 'exploratory_policy', one_initialization = True)) - Q(s, 'exploratory_policy')[a])
 
 			if current_event != EMPTY_EVENT:
 				# New event detected
@@ -198,17 +197,6 @@ def main():
 								V[(s, event_key, ttt)]  = V[(s, event_key, ttt)] + 0.1 *(V[(ss, event_key, ttt+1)]- V[(s, event_key, ttt)])
 
 
-				
-
-				"""
-				if done and ev_reward ==1:
-					NS[(ss,ev)] = ss
-
-				best_a = np.argmax(Q(s,ev))
-				if a == best_a and Q(s,ev)[a]>0:
-					NS[(s,ev)] = NS[(ss,ev)]
-				"""			
-			#done = r = int(current_event == event_goal)
 			
 			r_total += reward
 
