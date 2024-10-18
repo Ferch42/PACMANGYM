@@ -21,13 +21,16 @@ EVENT_DICT = {}
 
 EMPTY_EVENT = Event(set(), set())
 
-def Q(obs, g):
+def Q(obs, g, one_initialization = False):
 
 	global q
 	s = (obs, g)
 	#print(s)
 	if s not in q:
-		q[s] = np.zeros(4) 
+		q[s] = np.zeros(4)
+
+		if one_initialization:
+			q[s] = q[s] + 1
 
 	return q[s]
 
@@ -45,17 +48,17 @@ def meta_planner(s, sigma, goal):
 
 	while(len(queue)>0):
 
-		print(queue)
+		#print(queue)
 		node = queue.pop(0)
 		s, sigma, goal, plan = node
 		visited_set.add((s, str(list(sorted(sigma))), goal))
 
 		if goal == True:
-			done = True
 			final_plan = plan
+			break
 
 		for ev in [x for x in EVENT_DICT.values() if x.previous_sigma == sigma]:
-			print(ev)
+			#print(ev)
 			next_goal = prog(ev.next_sigma, goal)
 
 			try:
@@ -64,16 +67,15 @@ def meta_planner(s, sigma, goal):
 				ss = None
 
 			next_node = [ss, ev.next_sigma, next_goal, plan.copy() + [str(ev)]]
+
 			try:
 
-				if (ss, str(list(sorted(ev.next_sigma))), next_goal) not in visited_set and V[(s, str(ev), 0)]>0:
+				if ((ss, str(list(sorted(ev.next_sigma))), next_goal) not in visited_set and V[(s, str(ev), 0)]>0) or next_goal == True:
 
 					queue.append(next_node)
 			except:
 				pass
 
-		if done:
-			break
 	
 	print(final_plan)
 
@@ -123,17 +125,20 @@ def main():
 
 			# Random action policy
 			if np.random.uniform() <1 : #1-(ep/N_EPISODES):
-				a = np.random.randint(4)
+				a = Q(s, 'exploratory_policy',  one_initialization = True).argmax()
+				#print(Q(s, 'exploratory_policy'))
 			else:
-				a = Q(s, "[]['A']").argmax()
+				a = meta_planner(s, sigma, goal)
 				
-
+			a = np.random.randint(4)
 
 			ss, reward, done_ep, info = env.step(a)
 			#print(goal)
 			next_sigma = info['P']
 			next_goal = info['GOAL']
 			current_event = info['E']
+
+			Q(s, 'exploratory_policy')[a] = Q(s, 'exploratory_policy')[a] + 0.99 * (0 +  GAMMA*np.max(Q(ss, 'exploratory_policy', one_initialization = True)) - Q(s, 'exploratory_policy')[a])
 
 			if current_event != EMPTY_EVENT:
 				# New event detected
@@ -154,7 +159,7 @@ def main():
 							ev_reward = 1
 					
 				
-					Q(s,event_key)[a] = Q(s,event_key)[a] + ALPHA * (ev_reward +  (1- done)*GAMMA*np.max(Q(ss,event_key))) - Q(s,event_key)[a]
+					Q(s,event_key)[a] = Q(s,event_key)[a] + ALPHA * (ev_reward +  (1- done)*GAMMA*np.max(Q(ss,event_key)) - Q(s,event_key)[a])
 
 					best_a = np.argmax(Q(s,event_key))
 					
@@ -229,8 +234,6 @@ def main():
 
 			if done_ep:
 				print(f"DONE IN {t}")
-				print('Final STATE')
-				print(s)
 				break
 
 		rewards.append(r_total)
