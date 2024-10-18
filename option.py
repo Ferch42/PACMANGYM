@@ -34,11 +34,12 @@ def Q(obs, g, one_initialization = False):
 
 	return q[s]
 
-def meta_planner(s, sigma, goal):
+def meta_planner(s_initial, sigma, initial_goal):
 
 	global EVENT_DICT, F, V
 
-	initial_state = [s, sigma, goal, []]
+	initial_state = [s_initial, sigma, initial_goal, []]
+
 	queue = [initial_state]
 	visited_set = set()
 
@@ -70,7 +71,7 @@ def meta_planner(s, sigma, goal):
 
 			try:
 
-				if ((ss, str(list(sorted(ev.next_sigma))), next_goal) not in visited_set and V[(s, str(ev), 0)]>0) or next_goal == True:
+				if ((ss, str(list(sorted(ev.next_sigma))), next_goal) not in visited_set and Q(s, str(ev)).max()>0 ) or next_goal == True:
 
 					queue.append(next_node)
 			except:
@@ -78,13 +79,11 @@ def meta_planner(s, sigma, goal):
 
 	if final_plan != None:
 		first_event = final_plan[0]
-		print(final_plan)
-		print(str(first_event))
-		print(Q(s,str(first_event)))
 
-		return Q(s,str(first_event)).argmax()
+		return Q(s_initial,str(first_event)).argmax()
 	
 	else:
+		#print('not plan')
 		return np.random.randint(4)
 
 def main():
@@ -111,12 +110,7 @@ def main():
 
 		t = 0
 		r_total = 0
-		if (s, "[]['A']", 0) in F.keys():
-			print('------------------------')
-			print("F")
-			print(F[(s, "[]['A']", 0)].argmax())
-			print(F[(s, "[]['A']", 0)][F[(s, "[]['A']", 0)].argmax()])	
-			print(V[(s, "[]['A']", 0)])
+
 		
 		if ep%10==0:
 			print("debugging metaplanner")
@@ -132,7 +126,7 @@ def main():
 			else:
 				a = meta_planner(s, sigma, goal)
 				
-			a = np.random.randint(4)
+			#a = np.random.randint(4)
 
 			ss, reward, done_ep, info = env.step(a)
 			#print(goal)
@@ -160,7 +154,7 @@ def main():
 						if current_event == event:
 							ev_reward = 1
 					
-				
+
 					Q(s,event_key)[a] = Q(s,event_key)[a] + ALPHA * (ev_reward +  (1- done)*GAMMA*np.max(Q(ss,event_key)) - Q(s,event_key)[a])
 
 					best_a = np.argmax(Q(s,event_key))
@@ -218,7 +212,7 @@ def main():
 				avg_timesteps.append(np.mean(times[-100:]))
 				print(goal)
 				print("Q value estimates")
-				print(sum([x.sum() for x in q.values()]))
+				print(sum([v.sum() for k,v in q.items() if k[1] == "[]['D']"]))
 				print(EVENT_DICT.keys())
 				
 
