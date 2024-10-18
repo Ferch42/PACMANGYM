@@ -34,61 +34,88 @@ def Q(obs, g, one_initialization = False):
 
 	return q[s]
 
-def meta_planner(s_initial, sigma, initial_goal):
 
-	global EVENT_DICT, F, V
+class MetaPlanner():
 
-	initial_state = [s_initial, sigma, initial_goal, []]
 
-	queue = [initial_state]
-	visited_set = set()
+	def __init__(self, period = 100):
 
-	done = False
+		self.period = period
+		self.i = 0
+		self.executing_plan_flag = False
 
-	final_plan = None
+	def monte_carlo_search(self,s_initial, sigma, initial_goal, EVENT_DICT, F, V):
+ 
+		initial_state = [s_initial, sigma, initial_goal, []]
 
-	while(len(queue)>0):
+		queue = [initial_state]
+		visited_set = set()
 
-		#print(queue)
-		node = queue.pop(0)
-		s, sigma, goal, plan = node
-		visited_set.add((s, str(list(sorted(sigma))), goal))
+		final_plan = None
 
-		if goal == True:
-			final_plan = plan
-			break
+		while(len(queue)>0):
 
-		for ev in [x for x in EVENT_DICT.values() if x.previous_sigma == sigma]:
-			#print(ev)
-			next_goal = prog(ev.next_sigma, goal)
+			#print(queue)
+			node = queue.pop(0)
+			s, sigma, goal, plan = node
+			visited_set.add((s, str(list(sorted(sigma))), goal))
 
-			try:
-				ss = F[(s, str(ev), 0)].argmax()
-			except:
-				ss = None
+			if goal == True:
+				final_plan = plan
+				break
 
-			next_node = [ss, ev.next_sigma, next_goal, plan.copy() + [str(ev)]]
+			for ev in [x for x in EVENT_DICT.values() if x.previous_sigma == sigma]:
+				#print(ev)
+				next_goal = prog(ev.next_sigma, goal)
 
-			try:
+				try:
+					ss = F[(s, str(ev), 0)].argmax()
+				except:
+					ss = None
 
-				if ((ss, str(list(sorted(ev.next_sigma))), next_goal) not in visited_set and Q(s, str(ev)).max()>0 ) or next_goal == True:
+				next_node = [ss, ev.next_sigma, next_goal, plan.copy() + [str(ev)]]
 
-					queue.append(next_node)
-			except:
-				pass
+				try:
 
-	if final_plan != None:
-		first_event = final_plan[0]
+					if ((ss, str(list(sorted(ev.next_sigma))), next_goal) not in visited_set and V[(s, str(ev), 0)]>0) or next_goal == True:
 
-		return Q(s_initial,str(first_event)).argmax()
+						queue.append(next_node)
+				except:
+					pass
+
+		return final_plan
 	
-	else:
-		#print('not plan')
-		return np.random.randint(4)
+	def execute_plan(self, s_initial, sigma, initial_goal, EVENT_DICT, F, V):
+
+
+
+
+
+	def get_action(self,s_initial, sigma, initial_goal, EVENT_DICT, F, V):
+
+		self.i+=1
+
+		a = Q(s_initial, 'exploratory_policy',  one_initialization = True).argmax()
+		
+		if self.i%self.period ==0 and not self.executing_plan_flag:
+			# Check for a plan
+			self.plan = self.monte_carlo_search(s_initial, sigma, initial_goal, EVENT_DICT, F, V)
+
+			if self.plan != None:
+				a = self.execute_plan(s_initial, sigma, initial_goal, EVENT_DICT, F, V)
+
+	
+
+		return a
+
+
+
+
 
 def main():
 
-	global EPSILON,q, EMPTY_EVENT
+	global EPSILON,q, EMPTY_EVENT, EVENT_DICT, F, V
+
 	env = PatchEnv()
 	obs = env.reset()
 	print(env.GOAL)
@@ -111,22 +138,12 @@ def main():
 		t = 0
 		r_total = 0
 
-		
-		if ep%10==0:
-			print("debugging metaplanner")
-			meta_planner(s, sigma, goal)
-		
 		env_size = env.SIZE*env.SIZE
+		
 		while(True):
 
-			# Random action policy
-			if np.random.uniform() < 1-(ep/N_EPISODES):
-				a = Q(s, 'exploratory_policy',  one_initialization = True).argmax()
-				#print(Q(s, 'exploratory_policy'))
-			else:
-				a = meta_planner(s, sigma, goal)
-				
-			#a = np.random.randint(4)
+			a = meta_planner(s, sigma, goal)
+			
 
 			ss, reward, done_ep, info = env.step(a)
 			#print(goal)
