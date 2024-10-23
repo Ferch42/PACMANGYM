@@ -11,7 +11,7 @@ DECAY_RATE = 0.99
 EPSILON = 1
 TIME_HORIZON = 20
 
-N_EPISODES = 100
+N_EPISODES = 1_000
 
 q = {}
 F = {}
@@ -38,11 +38,16 @@ def Q(obs, g, one_initialization = False):
 class MetaPlanner():
 
 
-	def __init__(self, period = 100):
-
+	def __init__(self, period = 300):
+		
+		# Meta planner configuration
 		self.period = period
 		self.i = 0
 		self.executing_plan_flag = False
+		self.fail_flag = False
+
+		self.plan = []
+
 
 	def monte_carlo_search(self,s_initial, sigma, initial_goal, EVENT_DICT, F, V):
  
@@ -85,27 +90,43 @@ class MetaPlanner():
 
 		return final_plan
 	
-	def execute_plan(self, s_initial, sigma, initial_goal, EVENT_DICT, F, V):
-
-
-
 
 
 	def get_action(self,s_initial, sigma, initial_goal, EVENT_DICT, F, V):
 
-		self.i+=1
-
+	
 		a = Q(s_initial, 'exploratory_policy',  one_initialization = True).argmax()
 		
-		if self.i%self.period ==0 and not self.executing_plan_flag:
+		if self.i%self.period ==0:
 			# Check for a plan
 			self.plan = self.monte_carlo_search(s_initial, sigma, initial_goal, EVENT_DICT, F, V)
 
-			if self.plan != None:
-				a = self.execute_plan(s_initial, sigma, initial_goal, EVENT_DICT, F, V)
+			if not self.executing_plan_flag and self.fail_flag:
 
+				self.fail_flag = False
+			
+			
+			if self.executing_plan_flag and initial_goal !=True and not self.fail_flag:
+
+				self.executing_plan_flag = False
+				self.fail_flag = True
+
+			
+			if self.plan != None and not self.fail_flag:
+
+				self.executing_plan_flag = True
 	
 
+
+		if self.executing_plan_flag:
+
+			self.plan = self.monte_carlo_search(s_initial, sigma, initial_goal, EVENT_DICT, F, V)
+			a  = Q(s_initial, self.plan[0]).argmax()
+
+		
+
+		self.i+=1
+		
 		return a
 
 
@@ -139,10 +160,11 @@ def main():
 		r_total = 0
 
 		env_size = env.SIZE*env.SIZE
-		
+		planner = MetaPlanner()
+
 		while(True):
 
-			a = meta_planner(s, sigma, goal)
+			a = planner.get_action(s, sigma, goal, EVENT_DICT, F, V)
 			
 
 			ss, reward, done_ep, info = env.step(a)
