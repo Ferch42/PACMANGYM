@@ -11,7 +11,7 @@ DECAY_RATE = 0.99
 EPSILON = 1
 TIME_HORIZON = 20
 
-N_EPISODES = 1_000
+N_EPISODES = 100_000
 
 q = {}
 F = {}
@@ -118,9 +118,9 @@ class MetaPlanner():
 	
 
 
-		if self.executing_plan_flag:
+		if self.executing_plan_flag and self.plan!= None:
 
-			self.plan = self.monte_carlo_search(s_initial, sigma, initial_goal, EVENT_DICT, F, V)
+			#self.plan = self.monte_carlo_search(s_initial, sigma, initial_goal, EVENT_DICT, F, V)
 			a  = Q(s_initial, self.plan[0]).argmax()
 
 		
@@ -155,6 +155,7 @@ def main():
 
 		sigma  =info['P']
 		goal = info['GOAL']
+		initial_goal = goal
 
 		t = 0
 		r_total = 0
@@ -242,22 +243,24 @@ def main():
 
 			t+=1
 
-			if t%10_000==0:
+			if ep%100==0 and done_ep:
 
 				print(f'EPISODE: {ep}')
 				print(f'REWARD AVG: {np.mean(rewards[-100:])}')
 				avg_rewards.append(np.mean(rewards[-100:]))
 				print(f'TIMESTEP AVG: {np.mean(times[-100:])}')
 				avg_timesteps.append(np.mean(times[-100:]))
+				"""				
 				print(goal)
 				print("Q value estimates")
 				print(sum([v.sum() for k,v in q.items() if k[1] == "[]['D']"]))
-				print(EVENT_DICT.keys())
+				print(EVENT_DICT.keys())"""
 				
 
 
 			if done_ep:
-				print(f"DONE IN {t}")
+				#print(initial_goal)
+				#print(f"{ep} EPISODE - DONE IN {t}")
 				break
 
 		rewards.append(r_total)
