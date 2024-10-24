@@ -38,7 +38,7 @@ def Q(obs, g, one_initialization = False):
 class MetaPlanner():
 
 
-	def __init__(self, period = 300):
+	def __init__(self, period = 100):
 		
 		# Meta planner configuration
 		self.period = period
@@ -118,10 +118,11 @@ class MetaPlanner():
 	
 
 
-		if self.executing_plan_flag and self.plan!= None:
+		if self.executing_plan_flag:
 
-			#self.plan = self.monte_carlo_search(s_initial, sigma, initial_goal, EVENT_DICT, F, V)
-			a  = Q(s_initial, self.plan[0]).argmax()
+			self.plan = self.monte_carlo_search(s_initial, sigma, initial_goal, EVENT_DICT, F, V)
+			if self.plan!= None:
+				a  = Q(s_initial, self.plan[0]).argmax()
 
 		
 
