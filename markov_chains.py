@@ -2,10 +2,11 @@ import time
 import numpy as np
 import os
 from tqdm import tqdm
+from matplotlib import pyplot as plt
 
 
 STOP_PROB = 0.2
-GAMMA = 0.9
+GAMMA = 0.99
 
 N = 51
 
@@ -24,6 +25,8 @@ ACTION_DICT = {
     2: (-1,0),
     3: (0,-1)
 }
+
+GOALS = ['🍜' ,'🥗' ,'🍸' ,'🍹' ,'🌮' ]
 
 q = dict()
 
@@ -84,14 +87,17 @@ def step(action, goal):
 
 def main():
 
-    goal = '🌮'
-    for i in tqdm(range(10_000_000)):
+    goal = '🥗'
+    for i in tqdm(range(1_000_000)):
 
         s = POINTS['🤖']
         action = np.random.randint(4)
-        ss, reward = step(action, goal)
+        ss, _ = step(action, goal)
         
-        Q((s,goal))[action] = Q((s,goal))[action] + 0.1 * (reward + GAMMA * (1-reward) * np.max(Q((ss,goal))) - Q((s,goal))[action])
+        for g in GOALS:
+
+            reward = int(POINTS['🤖'] == POINTS[g])
+            Q((s,g))[action] = Q((s,g))[action] + 0.1 * (reward + GAMMA * (1-reward) * np.max(Q((ss,g))) - Q((s,g))[action])
 
         if i%100_000==0:
 
@@ -100,11 +106,24 @@ def main():
 
     reset()
 
-    for i in range(100):
-        os.system('cls')
-        render()
-        time.sleep(1)
-        step(Q((POINTS['🤖'], goal)).argmax(), goal)
+    ep_len = []
+    e = 0
+    for i in range(100_000):
+        #os.system('cls')
+        #render()
+        #time.sleep(1)
+        _, reward = step(Q((POINTS['🤖'], goal)).argmax(), goal)
+        e+=1
+        if reward == 1:
+            ep_len.append(e)
+            e = 0
+            reset()
+
+    print(ep_len)
+
+    counts, bins = np.histogram(ep_len, bins=200)
+    plt.stairs(counts, bins, fill=True)
+    plt.show()
 
 if __name__=='__main__':
     main()
