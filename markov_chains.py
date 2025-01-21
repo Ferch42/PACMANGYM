@@ -1,6 +1,11 @@
+import time
 import numpy as np
+import os
+from tqdm import tqdm
 
-STOP_PROB = 0.1
+
+STOP_PROB = 0.2
+GAMMA = 0.9
 
 N = 51
 
@@ -19,6 +24,15 @@ ACTION_DICT = {
     2: (-1,0),
     3: (0,-1)
 }
+
+q = dict()
+
+def Q(state):
+    
+    if state not in q:
+        q[state] = np.zeros(4)
+
+    return q[state]
 
 def reset():
 
@@ -49,7 +63,7 @@ def render():
     print(grid)
 
 
-def step(action):
+def step(action, goal):
 
     global POINTS, STOP_PROB, ACTION_DICT, N
 
@@ -62,12 +76,35 @@ def step(action):
         Y = min(max(Y+D_Y, 0), N-1)
 
     POINTS['🤖'] = (X,Y)
-
-
-for i in range(100):
-
-    render()
-    print(POINTS['🤖'])
-    a = int(input("Digite a acao: "))
     
-    step(a)
+    reward = int(POINTS['🤖'] == POINTS[goal])
+    
+    return POINTS['🤖'], reward
+
+
+def main():
+
+    goal = '🌮'
+    for i in tqdm(range(10_000_000)):
+
+        s = POINTS['🤖']
+        action = np.random.randint(4)
+        ss, reward = step(action, goal)
+        
+        Q((s,goal))[action] = Q((s,goal))[action] + 0.1 * (reward + GAMMA * (1-reward) * np.max(Q((ss,goal))) - Q((s,goal))[action])
+
+        if i%100_000==0:
+
+            print(f"The value is {sum([x.sum() for x in q.values()])}")
+            print(f"The value is {Q(((25,25),goal))}")
+
+    reset()
+
+    for i in range(100):
+        os.system('cls')
+        render()
+        time.sleep(1)
+        step(Q((POINTS['🤖'], goal)).argmax(), goal)
+
+if __name__=='__main__':
+    main()
