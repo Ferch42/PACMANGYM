@@ -85,6 +85,20 @@ def step(action, goal):
     return POINTS['🤖'], reward
 
 
+def run_policy(goal, t):
+
+    
+    ss = POINTS['🤖']
+    for i in range(t):
+
+        ss , reward = step(Q((POINTS['🤖'], goal)).argmax(), goal)
+
+        if reward==1:
+            return ss,t-(i+1), True
+    
+    return ss, t, False
+
+
 def main():
 
     goal = '🥗'
@@ -124,6 +138,8 @@ def main():
     counts, bins = np.histogram(ep_len, bins=200)
     plt.stairs(counts, bins, fill=True)
     plt.show()
+
+
 
 if __name__=='__main__':
     main()
