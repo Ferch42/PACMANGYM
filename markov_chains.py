@@ -173,11 +173,12 @@ def main():
     SUCCESS_DICT = {}
     TRIALS_DICT = {}
 
-    for episode in range(100_000):
+    for episode in range(10_000):
         
         reset()
-        run_policy('🥗', 25)
+        ss, time_spent, done = run_policy('🥗', 100)
 
+        #print('----------------------')
         for i in range(len(TRAJECTORY)-1):
             key = (TRAJECTORY[i], '🥗', len(TRAJECTORY)- i - 1)
             #print(key)
@@ -185,16 +186,20 @@ def main():
                 TRIALS_DICT[key] = 0
                 SUCCESS_DICT[key] = 0
             
-            SUCCESS_DICT[key] +=1
+            
             TRIALS_DICT[key] +=1
+
+            if done:
+                SUCCESS_DICT[key] +=1
             
         for j in range(len(TRAJECTORY) -1):
 
             for k in range(len(TRAJECTORY) -2 - j):
                 #print(k, len(TRAJECTORY)- j - 2)
 
-                key = (TRAJECTORY[k], '🥗', len(TRAJECTORY)- j - 1)
-
+                key = (TRAJECTORY[k], '🥗', len(TRAJECTORY)- j-k - 2)
+                #print(key)
+                
                 if key not in TRIALS_DICT:
                     TRIALS_DICT[key] = 0
                     SUCCESS_DICT[key] = 0
