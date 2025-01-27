@@ -9,14 +9,17 @@ STOP_PROB = 0.2
 GAMMA = 0.99
 
 N = 51
+INITIAL_STATE = (25,25)
 
 POINTS = {
-    '🤖' : (25,25),
+    '🤖' : INITIAL_STATE,
     '🍜' : (0,0),
     '🥗' : (35,35),
     '🍸' : (40,25),
     '🍹' : (10,25),
     '🌮' : (15,35),
+    '🍣' : (40,35),
+    '🥓' : (10,35)
 }
 
 ACTION_DICT = {
@@ -26,8 +29,36 @@ ACTION_DICT = {
     3: (0,-1)
 }
 
-GOALS = ['🍜' ,'🥗' ,'🍸' ,'🍹' ,'🌮' ]
+GOALS = ['🍜' ,'🥗' ,'🍸' ,'🍹' ,'🌮','🍣','🥓']
 TRAJECTORY = []
+
+# TRIALS DICT
+
+SUCCESS_DICT = {}
+TRIALS_DICT = {}
+
+# POSSIBLE PATHS 
+
+POSSIBLE_PATHS = (('🍜'), ('🥗' ,'🍸'), ('🥗' ,'🍣'),('🌮', '🍹'), ('🌮', '🥓'))
+
+
+def possible_events(partial_path):
+    
+    global POSSIBLE_PATHS
+
+    path_size = len(partial_path)
+
+    mathing_paths = [x for x in POSSIBLE_PATHS if x[0:path_size] == partial_path]
+    aux = []
+
+    for m_p in mathing_paths:
+        if len(m_p)>path_size:
+            aux.append(m_p[path_size])
+    
+    return aux
+
+
+
 
 
 q = dict()
@@ -43,7 +74,7 @@ def reset():
 
     global TRAJECTORY
 
-    POINTS['🤖'] = (25,25)
+    POINTS['🤖'] = INITIAL_STATE
     TRAJECTORY = [POINTS['🤖']]
 
 
@@ -106,11 +137,46 @@ def run_policy(goal, t):
     return ss, t, False
 
 
+def update_trial_dict(trail, goal, done):
+
+    global TRIALS_DICT, SUCCESS_DICT
+
+    for i in range(len(trail)-1):
+        key = (trail[i], goal, len(trail)- i - 1)
+        #print(key)
+        if key not in TRIALS_DICT:
+            TRIALS_DICT[key] = 0
+            SUCCESS_DICT[key] = 0
+            
+            
+        TRIALS_DICT[key] +=1
+
+        if done:
+            SUCCESS_DICT[key] +=1
+
+
+    for j in range(len(trail) -1):
+
+        for k in range(len(trail) -2 - j):
+            #print(k, len(trail)- j - 2)
+
+            key = (trail[k], goal, len(trail)- j-k - 2)
+            #print(key)
+                
+            if key not in TRIALS_DICT:
+                TRIALS_DICT[key] = 0
+                SUCCESS_DICT[key] = 0
+           
+            TRIALS_DICT[key] +=1
+
+
+
+
 def main():
 
-    global TRAJECTORY
+    global TRAJECTORY, SUCCESS_DICT, TRIALS_DICT
     
-    goal = '🥗'
+    goal = '🍜'
     reset()
     for i in tqdm(range(1_000_000)):
 
@@ -126,7 +192,7 @@ def main():
         if i%100_000==0:
 
             print(f"The value is {sum([x.sum() for x in q.values()])}")
-            print(f"The value is {Q(((25,25),goal))}")
+            print(f"The value is {Q((INITIAL_STATE,goal))}")
 
     reset()
 
@@ -145,73 +211,39 @@ def main():
 
     print(ep_len)
 
-    #counts, bins = np.histogram(ep_len, bins=200)
-    #plt.stairs(counts, bins, fill=True)
-    #plt.show()
+    counts, bins = np.histogram(ep_len, bins=200)
+    plt.stairs(counts, bins, fill=True)
+    plt.show()
 
-
-    reset()
-
-    T_MAX= 200
-    t = 0
-    high_level_activations = []
-    
-    #plan = ['🥗', '🍸', '🌮']
-    plan = ['🥗'] 
-    
-    for p in plan:
-        
-        high_level_activations.append((p, t))
-        
-        ss, time_spent, done = run_policy(p, T_MAX - t)
-        t += time_spent
-        
-    print("++++++++++++++++++++++++++++++++++")
-    print(TRAJECTORY)
-    print(high_level_activations)
-
-    SUCCESS_DICT = {}
-    TRIALS_DICT = {}
 
     for episode in range(10_000):
         
         reset()
-        ss, time_spent, done = run_policy('🥗', 100)
-
-        #print('----------------------')
-        for i in range(len(TRAJECTORY)-1):
-            key = (TRAJECTORY[i], '🥗', len(TRAJECTORY)- i - 1)
-            #print(key)
-            if key not in TRIALS_DICT:
-                TRIALS_DICT[key] = 0
-                SUCCESS_DICT[key] = 0
+        T_MAX= 200
+        t = 0
+        high_level_activations = []
+        
+        plan = ['🥗', '🍸', '🌮']
+        #plan = ['🥗'] 
+        
+        for p in plan:
             
-            
-            TRIALS_DICT[key] +=1
+            ss, time_spent, done = run_policy(p, T_MAX - t)
+            high_level_activations.append((p, t, done, time_spent))
+            t += time_spent
 
-            if done:
-                SUCCESS_DICT[key] +=1
-            
-        for j in range(len(TRAJECTORY) -1):
+        for h in high_level_activations:
 
-            for k in range(len(TRAJECTORY) -2 - j):
-                #print(k, len(TRAJECTORY)- j - 2)
+            update_trial_dict(TRAJECTORY[h[1]: h[3]+ h[1]+1], h[0], h[2])
 
-                key = (TRAJECTORY[k], '🥗', len(TRAJECTORY)- j-k - 2)
-                #print(key)
-                
-                if key not in TRIALS_DICT:
-                    TRIALS_DICT[key] = 0
-                    SUCCESS_DICT[key] = 0
-
-                TRIALS_DICT[key] +=1
-
-
-    PROB_DICT = {k: SUCCESS_DICT[k]/(TRIALS_DICT[k]) for k in TRIALS_DICT.keys()}
-    print(PROB_DICT)
-
+    PROB_DICT = {k:SUCCESS_DICT[k]/TRIALS_DICT[k] for k in TRIALS_DICT.keys()}
+    print([(x,PROB_DICT[x]) for x in PROB_DICT])
 
 
 
 if __name__=='__main__':
     main()
+    render()
+    # POSSIBLE_PATHS = (('🍜'), ('🥗' ,'🍸'), ('🥗' ,'🍣'),('🌮', '🍹'), ('🌮', '🥓'))
+
+    print(possible_events(tuple('🥗')))
