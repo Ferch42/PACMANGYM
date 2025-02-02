@@ -8,18 +8,20 @@ from matplotlib import pyplot as plt
 STOP_PROB = 0.2
 GAMMA = 0.99
 
+T_MAX= 45
+
 N = 51
 INITIAL_STATE = (25,25)
 
 POINTS = {
     '🤖' : INITIAL_STATE,
-    '🍜' : (0,0),
+    '🍜' : (5,5),
     '🥗' : (35,35),
     '🍸' : (40,25),
     '🍹' : (10,25),
     '🌮' : (15,35),
-    '🍣' : (40,35),
-    '🥓' : (10,35)
+    '🍣' : (40,43),
+    '🥓' : (5,32)
 }
 
 ACTION_DICT = {
@@ -30,16 +32,17 @@ ACTION_DICT = {
 }
 
 GOALS = ['🍜' ,'🥗' ,'🍸' ,'🍹' ,'🌮','🍣','🥓']
+GOAL_INDEX = {i: g for i,g in enumerate()}
 TRAJECTORY = []
 
 # TRIALS DICT
 
-SUCCESS_DICT = {}
+REWARDS_DICT = {}
 TRIALS_DICT = {}
 
 # POSSIBLE PATHS 
 
-POSSIBLE_PATHS = (('🍜'), ('🥗' ,'🍸'), ('🥗' ,'🍣'),('🌮', '🍹'), ('🌮', '🥓'))
+POSSIBLE_PATHS = (('🍜',), ('🥗' ,'🍸'), ('🥗' ,'🍣'),('🌮', '🍹'), ('🌮', '🥓'))
 
 
 def possible_events(partial_path):
@@ -55,18 +58,17 @@ def possible_events(partial_path):
         if len(m_p)>path_size:
             aux.append(m_p[path_size])
     
-    return aux
-
+    return list(set(aux))
 
 
 
 
 q = dict()
 
-def Q(state):
+def Q(state, n_actions = 4):
     
     if state not in q:
-        q[state] = np.zeros(4)
+        q[state] = np.zeros(n_actions)
 
     return q[state]
 
@@ -78,9 +80,16 @@ def reset():
     TRAJECTORY = [POINTS['🤖']]
 
 
+def episilon_greedy_meta_policy(s, episilon = 0.1):
+
+    pass
+
+
+
+
 def render():
 
-    global POINTS, STOP_PROB, ACTION_DICT, N
+    global POINTS, STOP_PROB, ACTION_DICT, N, T_MAX
     
     grid = '#'*(N+2) + '\n'
     for i in range(N):
@@ -139,20 +148,22 @@ def run_policy(goal, t):
 
 def update_trial_dict(trail, goal, done):
 
-    global TRIALS_DICT, SUCCESS_DICT
+    global TRIALS_DICT, REWARDS_DICT
 
     for i in range(len(trail)-1):
         key = (trail[i], goal, len(trail)- i - 1)
         #print(key)
         if key not in TRIALS_DICT:
             TRIALS_DICT[key] = 0
-            SUCCESS_DICT[key] = 0
+            REWARDS_DICT[key] = 0.9
             
             
         TRIALS_DICT[key] +=1
 
         if done:
-            SUCCESS_DICT[key] +=1
+            REWARDS_DICT[key] = REWARDS_DICT[key] + 0.1 * (1-REWARDS_DICT[key])
+        else:
+            REWARDS_DICT[key] = REWARDS_DICT[key] + 0.1 * (0-REWARDS_DICT[key])
 
 
     for j in range(len(trail) -1):
@@ -165,16 +176,17 @@ def update_trial_dict(trail, goal, done):
                 
             if key not in TRIALS_DICT:
                 TRIALS_DICT[key] = 0
-                SUCCESS_DICT[key] = 0
+                REWARDS_DICT[key] = 0.9
            
             TRIALS_DICT[key] +=1
+            REWARDS_DICT[key] = REWARDS_DICT[key] + 0.1 * (0-REWARDS_DICT[key])
 
 
 
 
 def main():
 
-    global TRAJECTORY, SUCCESS_DICT, TRIALS_DICT
+    global TRAJECTORY, REWARDS_DICT, TRIALS_DICT
     
     goal = '🍜'
     reset()
@@ -219,31 +231,39 @@ def main():
     for episode in range(10_000):
         
         reset()
-        T_MAX= 200
+        s = POINTS['🤖']
+
         t = 0
+        
+
         high_level_activations = []
         
-        plan = ['🥗', '🍸', '🌮']
+        events = []
         #plan = ['🥗'] 
         
-        for p in plan:
+        while(t< T_MAX):
             
+            h_s = (s, tuple(events), t)
+            p = episilon_greedy_meta_policy(h_s)
             ss, time_spent, done = run_policy(p, T_MAX - t)
             high_level_activations.append((p, t, done, time_spent))
             t += time_spent
+            
+            events.append(p)
+
 
         for h in high_level_activations:
 
             update_trial_dict(TRAJECTORY[h[1]: h[3]+ h[1]+1], h[0], h[2])
 
-    PROB_DICT = {k:SUCCESS_DICT[k]/TRIALS_DICT[k] for k in TRIALS_DICT.keys()}
+    PROB_DICT = {k:REWARDS_DICT[k]/TRIALS_DICT[k] for k in TRIALS_DICT.keys()}
     print([(x,PROB_DICT[x]) for x in PROB_DICT])
 
 
 
 if __name__=='__main__':
-    main()
+    #main()
     render()
-    # POSSIBLE_PATHS = (('🍜'), ('🥗' ,'🍸'), ('🥗' ,'🍣'),('🌮', '🍹'), ('🌮', '🥓'))
+    POSSIBLE_PATHS = (('🍜',), ('🥗' ,'🍸'), ('🥗' ,'🍣'),('🌮', '🍹'), ('🌮', '🥓'))
 
-    print(possible_events(tuple('🥗')))
+    print(possible_events(tuple()))
