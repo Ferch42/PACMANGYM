@@ -3,6 +3,7 @@ import numpy as np
 import os
 from tqdm import tqdm
 from matplotlib import pyplot as plt
+import random
 
 
 STOP_PROB = 0.2
@@ -32,7 +33,9 @@ ACTION_DICT = {
 }
 
 GOALS = ['🍜' ,'🥗' ,'🍸' ,'🍹' ,'🌮','🍣','🥓']
-GOAL_INDEX = {i: g for i,g in enumerate()}
+N_GOALS = len(GOALS)
+GOAL_INDEX = {g:i for i,g in enumerate(GOALS)}
+
 TRAJECTORY = []
 
 # TRIALS DICT
@@ -82,8 +85,19 @@ def reset():
 
 def episilon_greedy_meta_policy(s, episilon = 0.1):
 
-    pass
+    global N_GOALS
+    #s = (s, tuple(events), t)
+    events = s[1]
+    possible_events_list = possible_events(events)
 
+    best_a  = Q(s, n_actions = N_GOALS).argmax()
+
+    if np.random.uniform()< episilon or Q(s, n_actions = N_GOALS).max() == 0:
+        # random action
+        a = random.choice(possible_events_list)
+        return a
+    
+    return GOALS[best_a]
 
 
 
@@ -149,10 +163,11 @@ def run_policy(goal, t):
 def update_trial_dict(trail, goal, done):
 
     global TRIALS_DICT, REWARDS_DICT
+    print(trail)
 
     for i in range(len(trail)-1):
         key = (trail[i], goal, len(trail)- i - 1)
-        #print(key)
+        print(key)
         if key not in TRIALS_DICT:
             TRIALS_DICT[key] = 0
             REWARDS_DICT[key] = 0.9
@@ -225,10 +240,10 @@ def main():
 
     counts, bins = np.histogram(ep_len, bins=200)
     plt.stairs(counts, bins, fill=True)
-    plt.show()
+    #plt.show()
 
 
-    for episode in range(10_000):
+    for episode in range(1):
         
         reset()
         s = POINTS['🤖']
@@ -238,9 +253,10 @@ def main():
 
         high_level_activations = []
         
+        #plan = ['🥗']
+        # 
+        """ 
         events = []
-        #plan = ['🥗'] 
-        
         while(t< T_MAX):
             
             h_s = (s, tuple(events), t)
@@ -250,20 +266,75 @@ def main():
             t += time_spent
             
             events.append(p)
+        """
+
+        plan = ['🥗' ,'🍸'] 
+    
+        for p in plan:
+            
+            
+            ss, time_spent, done = run_policy(p, T_MAX - t)
+            high_level_activations.append((p, t, done, time_spent))
+            t += time_spent
 
 
         for h in high_level_activations:
 
             update_trial_dict(TRAJECTORY[h[1]: h[3]+ h[1]+1], h[0], h[2])
 
+
+        act_events = []
+        for ii in range(len(high_level_activations)):
+            
+            h = high_level_activations[ii]
+            print(h)
+            TT_MAXX = T_MAX - h[1]
+            
+            for et in range(h[3]):
+
+                reward = 1
+                #print('-----------')
+                for jj in range(ii, len(high_level_activations)):
+                    h2 = high_level_activations[jj]
+                    #print(h2)
+
+                    
+                    reward_key = 0
+                    if h[0]==h2[0]:
+                        ss = TRAJECTORY[h2[1] + et]
+                        reward_key = (ss, h2[0], h2[3] - et)
+                     
+                    else:
+                        ss = TRAJECTORY[h2[1]]
+                        reward_key = (ss, h2[0], h2[3])
+                    
+                
+                    #print(reward_key)
+                    #print(REWARDS_DICT[reward_key])
+                    reward = reward * REWARDS_DICT[reward_key]
+                print('%%%%%%%%%%')
+                print(reward)
+
+
+                s = TRAJECTORY[h[1] + et]
+                k = (s, tuple(act_events), TT_MAXX-et)
+                print(k)
+
+                #Q[k][GOAL_INDEX[h[0]]]  = Q[k][GOAL_INDEX[h[0]]] + 0.1 * ()
+
+            
+            act_events.append(h[0])
+
+
     PROB_DICT = {k:REWARDS_DICT[k]/TRIALS_DICT[k] for k in TRIALS_DICT.keys()}
-    print([(x,PROB_DICT[x]) for x in PROB_DICT])
+    print([(x,REWARDS_DICT[x]) for x in REWARDS_DICT])
 
 
 
 if __name__=='__main__':
-    #main()
-    render()
-    POSSIBLE_PATHS = (('🍜',), ('🥗' ,'🍸'), ('🥗' ,'🍣'),('🌮', '🍹'), ('🌮', '🥓'))
 
-    print(possible_events(tuple()))
+    main()
+    #render()
+    #POSSIBLE_PATHS = (('🍜',), ('🥗' ,'🍸'), ('🥗' ,'🍣'),('🌮', '🍹'), ('🌮', '🥓'))
+
+    #print(possible_events(tuple()))
