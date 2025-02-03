@@ -6,17 +6,17 @@ from matplotlib import pyplot as plt
 import random
 
 
-STOP_PROB = 0.2
+STOP_PROB = 1/3
 GAMMA = 0.99
 
-T_MAX= 45
+T_MAX= 37
 
 N = 51
 INITIAL_STATE = (25,25)
 
 POINTS = {
     '🤖' : INITIAL_STATE,
-    '🍜' : (5,5),
+    '🍜' : (0,14),
     '🥗' : (35,35),
     '🍸' : (40,25),
     '🍹' : (10,25),
@@ -167,7 +167,7 @@ def update_trial_dict(trail, goal, done):
 
     for i in range(len(trail)-1):
         key = (trail[i], goal, len(trail)- i - 1)
-        print(key)
+        #print(key)
         if key not in TRIALS_DICT:
             TRIALS_DICT[key] = 0
             REWARDS_DICT[key] = 0.9
@@ -236,14 +236,14 @@ def main():
             e = 0
             reset()
 
-    print(ep_len)
+    #print(ep_len)
 
     counts, bins = np.histogram(ep_len, bins=200)
     plt.stairs(counts, bins, fill=True)
     #plt.show()
 
 
-    for episode in range(1):
+    for episode in range(10_000):
         
         reset()
         s = POINTS['🤖']
@@ -277,17 +277,19 @@ def main():
             high_level_activations.append((p, t, done, time_spent))
             t += time_spent
 
-
         for h in high_level_activations:
 
             update_trial_dict(TRAJECTORY[h[1]: h[3]+ h[1]+1], h[0], h[2])
 
+        if high_level_activations[-1][2]:
+            print(f'Goal reached in {episode}')
+            break
 
         act_events = []
         for ii in range(len(high_level_activations)):
             
             h = high_level_activations[ii]
-            print(h)
+            #print(h)
             TT_MAXX = T_MAX - h[1]
             
             for et in range(h[3]):
@@ -296,7 +298,7 @@ def main():
                 #print('-----------')
                 for jj in range(ii, len(high_level_activations)):
                     h2 = high_level_activations[jj]
-                    #print(h2)
+                    print(h2)
 
                     
                     reward_key = 0
@@ -312,22 +314,22 @@ def main():
                     #print(reward_key)
                     #print(REWARDS_DICT[reward_key])
                     reward = reward * REWARDS_DICT[reward_key]
-                print('%%%%%%%%%%')
-                print(reward)
+                #print('%%%%%%%%%%')
+                #print(reward)
 
 
                 s = TRAJECTORY[h[1] + et]
                 k = (s, tuple(act_events), TT_MAXX-et)
-                print(k)
+                #print(k)
 
-                #Q[k][GOAL_INDEX[h[0]]]  = Q[k][GOAL_INDEX[h[0]]] + 0.1 * ()
+                Q(k)[GOAL_INDEX[h[0]]]  = Q(k)[GOAL_INDEX[h[0]]] + 0.1 * (reward- Q(k)[GOAL_INDEX[h[0]]])
 
             
             act_events.append(h[0])
 
 
     PROB_DICT = {k:REWARDS_DICT[k]/TRIALS_DICT[k] for k in TRIALS_DICT.keys()}
-    print([(x,REWARDS_DICT[x]) for x in REWARDS_DICT])
+    #print([(x,REWARDS_DICT[x]) for x in REWARDS_DICT])
 
 
 
