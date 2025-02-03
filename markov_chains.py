@@ -163,7 +163,7 @@ def run_policy(goal, t):
 def update_trial_dict(trail, goal, done):
 
     global TRIALS_DICT, REWARDS_DICT
-    print(trail)
+    #print(trail)
 
     for i in range(len(trail)-1):
         key = (trail[i], goal, len(trail)- i - 1)
@@ -243,7 +243,7 @@ def main():
     #plt.show()
 
 
-    for episode in range(10_000):
+    for episode in range(1_000_000):
         
         reset()
         s = POINTS['🤖']
@@ -269,6 +269,7 @@ def main():
         """
 
         plan = ['🥗' ,'🍸'] 
+        #plan = ['🍜']
     
         for p in plan:
             
@@ -298,7 +299,7 @@ def main():
                 #print('-----------')
                 for jj in range(ii, len(high_level_activations)):
                     h2 = high_level_activations[jj]
-                    print(h2)
+                    #print(h2)
 
                     
                     reward_key = 0
@@ -313,7 +314,10 @@ def main():
                 
                     #print(reward_key)
                     #print(REWARDS_DICT[reward_key])
-                    reward = reward * REWARDS_DICT[reward_key]
+                    if reward_key[-1] >0:
+                        reward = reward * REWARDS_DICT[reward_key]
+                    else:
+                        reward = 0
                 #print('%%%%%%%%%%')
                 #print(reward)
 
