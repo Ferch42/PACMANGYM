@@ -90,8 +90,15 @@ def episilon_greedy_meta_policy(s, episilon = 0.1):
     #s = (s, tuple(events), t)
     events = s[1]
     possible_events_list = possible_events(events)
+    
 
     best_a  = Q(s, n_actions = N_GOALS).argmax()
+
+    """
+    if Q(s, n_actions= N_GOALS).max()>0:
+        print(s)
+        print(Q(s, n_actions= N_GOALS))
+    """
 
     if np.random.uniform()< episilon or Q(s, n_actions = N_GOALS).max() == 0:
         # random action
@@ -256,17 +263,25 @@ def main():
         
         #plan = ['🥗']
         # 
-        """ 
+        
         events = []
         while(t< T_MAX):
-            
-            h_s = (s, tuple(events), t)
+
+            s = POINTS['🤖']
+            h_s = (s, tuple(events), T_MAX - t)
             p = episilon_greedy_meta_policy(h_s)
+            #if ((25, 25), (), 37)==h_s:
+            #    print(episode, p)
             ss, time_spent, done = run_policy(p, T_MAX - t)
             high_level_activations.append((p, t, done, time_spent))
             t += time_spent
             
             events.append(p)
+
+            for possible_path in POSSIBLE_PATHS:
+
+                if tuple(events) == possible_path:
+                    t += T_MAX
         """
 
         #plan = ['🥗' ,'🍸'] 
@@ -288,7 +303,7 @@ def main():
             t += time_spent
 
             events.append(p)
-
+        """ 
         for h in high_level_activations:
 
             update_trial_dict(TRAJECTORY[h[1]: h[3]+ h[1]+1], h[0], h[2])
