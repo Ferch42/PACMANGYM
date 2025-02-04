@@ -216,12 +216,12 @@ def main():
 
             reward = int(POINTS['🤖'] == POINTS[g])
             Q((s,g))[action] = Q((s,g))[action] + 0.1 * (reward + GAMMA * (1-reward) * np.max(Q((ss,g))) - Q((s,g))[action])
-
+        """
         if i%100_000==0:
 
             print(f"The value is {sum([x.sum() for x in q.values()])}")
             print(f"The value is {Q((INITIAL_STATE,goal))}")
-
+        """
     reset()
 
     ep_len = []
@@ -244,7 +244,7 @@ def main():
     #plt.show()
 
 
-    for episode in range(100000):
+    for episode in range(100_000):
         
         reset()
         s = POINTS['🤖']
@@ -276,9 +276,13 @@ def main():
 
         events = []
         for p in plan:
+            s = POINTS['🤖']
+            h_s = (s, tuple(events), T_MAX - t)
             
-            h_s = (s, tuple(events), t)
-            print(Q(h_s))
+            if Q(h_s,n_actions= N_GOALS).max()>0 and h_s[1]==('🥗',) and episode%10_000==0:
+                print(h_s)
+                print(Q(h_s,n_actions= N_GOALS))
+            
             ss, time_spent, done = run_policy(p, T_MAX - t)
             high_level_activations.append((p, t, done, time_spent))
             t += time_spent
