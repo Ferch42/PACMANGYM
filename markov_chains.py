@@ -21,8 +21,8 @@ POINTS = {
     '🍸' : (40,25),
     '🍹' : (10,25),
     '🌮' : (15,35),
-    '🍣' : (40,43),
-    '🥓' : (5,32)
+    '🍣' : (40,44),
+    '🥓' : (5,31)
 }
 
 ACTION_DICT = {
@@ -45,7 +45,8 @@ TRIALS_DICT = {}
 
 # POSSIBLE PATHS 
 
-POSSIBLE_PATHS = (('🍜',), ('🥗' ,'🍸'), ('🥗' ,'🍣'),('🌮', '🍹'), ('🌮', '🥓'))
+#POSSIBLE_PATHS = (('🍜',), ('🥗' ,'🍸'), ('🥗' ,'🍣'),('🌮', '🍹'), ('🌮', '🥓'))
+POSSIBLE_PATHS = (('🍜',), ('🥗' ,'🍸'), ('🥗' ,'🍣'))
 
 
 def possible_events(partial_path):
@@ -201,7 +202,7 @@ def update_trial_dict(trail, goal, done):
 
 def main():
 
-    global TRAJECTORY, REWARDS_DICT, TRIALS_DICT
+    global TRAJECTORY, REWARDS_DICT, TRIALS_DICT, POSSIBLE_PATHS
     
     goal = '🍜'
     reset()
@@ -243,7 +244,7 @@ def main():
     #plt.show()
 
 
-    for episode in range(1_000_000):
+    for episode in range(100000):
         
         reset()
         s = POINTS['🤖']
@@ -268,15 +269,21 @@ def main():
             events.append(p)
         """
 
-        plan = ['🥗' ,'🍸'] 
+        #plan = ['🥗' ,'🍸'] 
         #plan = ['🍜']
-    
+        #plan = ['🥗' ,'🍣']
+        plan = POSSIBLE_PATHS[episode%3]
+
+        events = []
         for p in plan:
             
-            
+            h_s = (s, tuple(events), t)
+            print(Q(h_s))
             ss, time_spent, done = run_policy(p, T_MAX - t)
             high_level_activations.append((p, t, done, time_spent))
             t += time_spent
+
+            events.append(p)
 
         for h in high_level_activations:
 
@@ -284,7 +291,7 @@ def main():
 
         if high_level_activations[-1][2]:
             print(f'Goal reached in {episode}')
-            break
+            
 
         act_events = []
         for ii in range(len(high_level_activations)):
@@ -326,8 +333,8 @@ def main():
                 k = (s, tuple(act_events), TT_MAXX-et)
                 #print(k)
 
-                Q(k)[GOAL_INDEX[h[0]]]  = Q(k)[GOAL_INDEX[h[0]]] + 0.1 * (reward- Q(k)[GOAL_INDEX[h[0]]])
-
+                Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]]  = Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]] + 0.1 * (reward- Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]])
+                #print(Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]])
             
             act_events.append(h[0])
 
