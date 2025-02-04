@@ -263,7 +263,7 @@ def main():
         
         #plan = ['🥗']
         # 
-        
+        """ 
         events = []
         while(t< T_MAX):
 
@@ -280,13 +280,12 @@ def main():
 
             for possible_path in POSSIBLE_PATHS:
 
-                if tuple(events) == possible_path:
+                if tuple(events) == possible_path and done:
                     t += T_MAX
+                    
+                    print(f'Goal reached in {episode}')
+                    print(f"PATH = {events}")
         """
-
-        #plan = ['🥗' ,'🍸'] 
-        #plan = ['🍜']
-        #plan = ['🥗' ,'🍣']
         plan = POSSIBLE_PATHS[episode%3]
 
         events = []
@@ -294,23 +293,25 @@ def main():
             s = POINTS['🤖']
             h_s = (s, tuple(events), T_MAX - t)
             
-            if Q(h_s,n_actions= N_GOALS).max()>0 and h_s[1]==('🥗',) and episode%10_000==0:
-                print(h_s)
-                print(Q(h_s,n_actions= N_GOALS))
-            
             ss, time_spent, done = run_policy(p, T_MAX - t)
             high_level_activations.append((p, t, done, time_spent))
             t += time_spent
 
             events.append(p)
-        """ 
+
+            for possible_path in POSSIBLE_PATHS:
+
+                if tuple(events) == possible_path and done:
+                    t += T_MAX
+                    
+                    print(f'Goal reached in {episode}')
+                    print(f"PATH = {events}")
+        
         for h in high_level_activations:
 
             update_trial_dict(TRAJECTORY[h[1]: h[3]+ h[1]+1], h[0], h[2])
 
-        if high_level_activations[-1][2]:
-            print(f'Goal reached in {episode}')
-            
+
 
         act_events = []
         for ii in range(len(high_level_activations)):
