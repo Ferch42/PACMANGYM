@@ -6,8 +6,9 @@ from matplotlib import pyplot as plt
 import random
 
 
-STOP_PROB = 1/3
+STOP_PROB = 1/5
 GAMMA = 0.99
+Q_FLAG = True
 
 T_MAX= 37
 
@@ -46,6 +47,7 @@ TRIALS_DICT = {}
 # POSSIBLE PATHS 
 
 #POSSIBLE_PATHS = (('🍜',), ('🥗' ,'🍸'), ('🥗' ,'🍣'),('🌮', '🍹'), ('🌮', '🥓'))
+
 POSSIBLE_PATHS = (('🍜',), ('🥗' ,'🍸'), ('🥗' ,'🍣'))
 
 
@@ -176,7 +178,7 @@ def update_trial_dict(trail, goal, done):
     for i in range(len(trail)-1):
         key = (trail[i], goal, len(trail)- i - 1)
         #print(key)
-        if key not in TRIALS_DICT:
+        if key not in REWARDS_DICT:
             TRIALS_DICT[key] = 0
             REWARDS_DICT[key] = 0.9
             
@@ -197,7 +199,7 @@ def update_trial_dict(trail, goal, done):
             key = (trail[k], goal, len(trail)- j-k - 2)
             #print(key)
                 
-            if key not in TRIALS_DICT:
+            if key not in REWARDS_DICT:
                 TRIALS_DICT[key] = 0
                 REWARDS_DICT[key] = 0.9
            
@@ -209,7 +211,7 @@ def update_trial_dict(trail, goal, done):
 
 def main():
 
-    global TRAJECTORY, REWARDS_DICT, TRIALS_DICT, POSSIBLE_PATHS
+    global TRAJECTORY, REWARDS_DICT, TRIALS_DICT, POSSIBLE_PATHS, q, Q_FLAG
     
     goal = '🍜'
     reset()
@@ -223,144 +225,251 @@ def main():
 
             reward = int(POINTS['🤖'] == POINTS[g])
             Q((s,g))[action] = Q((s,g))[action] + 0.1 * (reward + GAMMA * (1-reward) * np.max(Q((ss,g))) - Q((s,g))[action])
-        """
-        if i%100_000==0:
+    
+    
+    q_base_policies = q.copy()
+    
+    trial_list = []
+    first_goal_reached_list = []
+    for trial in range(100):
+        q = q_base_policies.copy()
+        REWARDS_DICT = {}
+        reward_list = np.zeros(int(10_000/100))
+        reached_goal = False
 
-            print(f"The value is {sum([x.sum() for x in q.values()])}")
-            print(f"The value is {Q((INITIAL_STATE,goal))}")
-        """
-    reset()
-
-    ep_len = []
-    e = 0
-    for i in range(100_000):
-        #os.system('cls')
-        #render()
-        #time.sleep(1)
-        _, reward = step(Q((POINTS['🤖'], goal)).argmax(), goal)
-        e+=1
-        if reward == 1:
-            ep_len.append(e)
-            e = 0
+        for episode in range(10_000):
+            
             reset()
+            s = POINTS['🤖']
 
-    #print(ep_len)
+            t = 0
 
-    counts, bins = np.histogram(ep_len, bins=200)
-    plt.stairs(counts, bins, fill=True)
+            high_level_activations = []
+            
+            goal_completed = False
+            if Q_FLAG: 
+
+                events = []
+                while(t< T_MAX):
+
+                    s = POINTS['🤖']
+                    h_s = (s, tuple(events), T_MAX - t)
+                    p = episilon_greedy_meta_policy(h_s)
+                    ss, time_spent, done = run_policy(p, T_MAX - t)
+                    high_level_activations.append((p, t, done, time_spent))
+                    t += time_spent
+                    
+                    events.append(p)
+
+                    for possible_path in POSSIBLE_PATHS:
+
+                        if tuple(events) == possible_path and done:
+                            t += T_MAX
+                            goal_completed = True
+                
+            else:
+
+                plan = POSSIBLE_PATHS[episode%3]
+
+                events = []
+                for p in plan:
+                    s = POINTS['🤖']
+                    h_s = (s, tuple(events), T_MAX - t)
+                    
+                    ss, time_spent, done = run_policy(p, T_MAX - t)
+                    high_level_activations.append((p, t, done, time_spent))
+                    t += time_spent
+
+                    events.append(p)
+
+                    for possible_path in POSSIBLE_PATHS:
+
+                        if tuple(events) == possible_path and done:
+                            t += T_MAX
+                            goal_completed = True
+                            if not reached_goal:
+                                first_goal_reached_list.append(episode)
+                                reached_goal = True
+            
+            if goal_completed:
+                #reward_list.append(1)
+                reward_list[int(episode/100)] += 1
+            
+            else:
+                #reward_list.append(0)
+                pass
+            
+            for h in high_level_activations:
+
+                update_trial_dict(TRAJECTORY[h[1]: h[3]+ h[1]+1], h[0], h[2])
+
+
+
+            act_events = []
+            for ii in range(len(high_level_activations)):
+                
+                h = high_level_activations[ii]
+                TT_MAXX = T_MAX - h[1]
+                
+                for et in range(h[3]):
+
+                    reward = 1
+
+                    for jj in range(ii, len(high_level_activations)):
+                        h2 = high_level_activations[jj]
+
+                        reward_key = 0
+                        if h[0]==h2[0]:
+                            ss = TRAJECTORY[h2[1] + et]
+                            reward_key = (ss, h2[0], h2[3] - et)
+                        
+                        else:
+                            ss = TRAJECTORY[h2[1]]
+                            reward_key = (ss, h2[0], h2[3])
+                        
+                        if reward_key[-1] >0:
+                            reward = reward * REWARDS_DICT[reward_key]
+                        else:
+                            reward = 0
+
+
+
+                    s = TRAJECTORY[h[1] + et]
+                    k = (s, tuple(act_events), TT_MAXX-et)
+
+
+                    Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]]  = Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]] + 0.1 * (reward- Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]])
+
+                act_events.append(h[0])
+
+        trial_list.append(reward_list)
+        print(f"RUN {trial} AVERAGE RETURN = {np.array(reward_list).mean()}")
+    trial_list = np.array(trial_list)
+    print(trial_list.shape)
+    trial_list = np.mean(trial_list, axis = 0)
+    plt.plot(trial_list)
     #plt.show()
 
+    trial_list_2 = []
+    Q_FLAG = False
 
-    for episode in range(100_000):
-        
-        reset()
-        s = POINTS['🤖']
+    for trial in range(100):
+        q = q_base_policies.copy()
+        REWARDS_DICT = {}
+        reward_list = np.zeros(int(10_000/100))
 
-        t = 0
-        
-
-        high_level_activations = []
-        
-        #plan = ['🥗']
-        # 
-        """ 
-        events = []
-        while(t< T_MAX):
-
+        for episode in range(10_000):
+            
+            reset()
             s = POINTS['🤖']
-            h_s = (s, tuple(events), T_MAX - t)
-            p = episilon_greedy_meta_policy(h_s)
-            #if ((25, 25), (), 37)==h_s:
-            #    print(episode, p)
-            ss, time_spent, done = run_policy(p, T_MAX - t)
-            high_level_activations.append((p, t, done, time_spent))
-            t += time_spent
+
+            t = 0
+
+            high_level_activations = []
             
-            events.append(p)
+            goal_completed = False
+            if Q_FLAG: 
 
-            for possible_path in POSSIBLE_PATHS:
+                events = []
+                while(t< T_MAX):
 
-                if tuple(events) == possible_path and done:
-                    t += T_MAX
+                    s = POINTS['🤖']
+                    h_s = (s, tuple(events), T_MAX - t)
+                    p = episilon_greedy_meta_policy(h_s)
+                    ss, time_spent, done = run_policy(p, T_MAX - t)
+                    high_level_activations.append((p, t, done, time_spent))
+                    t += time_spent
                     
-                    print(f'Goal reached in {episode}')
-                    print(f"PATH = {events}")
-        """
-        plan = POSSIBLE_PATHS[episode%3]
+                    events.append(p)
 
-        events = []
-        for p in plan:
-            s = POINTS['🤖']
-            h_s = (s, tuple(events), T_MAX - t)
-            
-            ss, time_spent, done = run_policy(p, T_MAX - t)
-            high_level_activations.append((p, t, done, time_spent))
-            t += time_spent
+                    for possible_path in POSSIBLE_PATHS:
 
-            events.append(p)
-
-            for possible_path in POSSIBLE_PATHS:
-
-                if tuple(events) == possible_path and done:
-                    t += T_MAX
-                    
-                    print(f'Goal reached in {episode}')
-                    print(f"PATH = {events}")
-        
-        for h in high_level_activations:
-
-            update_trial_dict(TRAJECTORY[h[1]: h[3]+ h[1]+1], h[0], h[2])
-
-
-
-        act_events = []
-        for ii in range(len(high_level_activations)):
-            
-            h = high_level_activations[ii]
-            #print(h)
-            TT_MAXX = T_MAX - h[1]
-            
-            for et in range(h[3]):
-
-                reward = 1
-                #print('-----------')
-                for jj in range(ii, len(high_level_activations)):
-                    h2 = high_level_activations[jj]
-                    #print(h2)
-
-                    
-                    reward_key = 0
-                    if h[0]==h2[0]:
-                        ss = TRAJECTORY[h2[1] + et]
-                        reward_key = (ss, h2[0], h2[3] - et)
-                     
-                    else:
-                        ss = TRAJECTORY[h2[1]]
-                        reward_key = (ss, h2[0], h2[3])
-                    
+                        if tuple(events) == possible_path and done:
+                            t += T_MAX
+                            goal_completed = True
                 
-                    #print(reward_key)
-                    #print(REWARDS_DICT[reward_key])
-                    if reward_key[-1] >0:
-                        reward = reward * REWARDS_DICT[reward_key]
-                    else:
-                        reward = 0
-                #print('%%%%%%%%%%')
-                #print(reward)
+            else:
 
+                plan = POSSIBLE_PATHS[episode%3]
 
-                s = TRAJECTORY[h[1] + et]
-                k = (s, tuple(act_events), TT_MAXX-et)
-                #print(k)
+                events = []
+                for p in plan:
+                    s = POINTS['🤖']
+                    h_s = (s, tuple(events), T_MAX - t)
+                    
+                    ss, time_spent, done = run_policy(p, T_MAX - t)
+                    high_level_activations.append((p, t, done, time_spent))
+                    t += time_spent
 
-                Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]]  = Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]] + 0.1 * (reward- Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]])
-                #print(Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]])
+                    events.append(p)
+
+                    for possible_path in POSSIBLE_PATHS:
+
+                        if tuple(events) == possible_path and done:
+                            t += T_MAX
+                            goal_completed = True
             
-            act_events.append(h[0])
+            if goal_completed:
+                #reward_list.append(1)
+                reward_list[int(episode/100)] += 1
+            
+            else:
+                #reward_list.append(0)
+                pass
+            
+            for h in high_level_activations:
+
+                update_trial_dict(TRAJECTORY[h[1]: h[3]+ h[1]+1], h[0], h[2])
 
 
-    PROB_DICT = {k:REWARDS_DICT[k]/TRIALS_DICT[k] for k in TRIALS_DICT.keys()}
-    #print([(x,REWARDS_DICT[x]) for x in REWARDS_DICT])
+
+            act_events = []
+            for ii in range(len(high_level_activations)):
+                
+                h = high_level_activations[ii]
+                TT_MAXX = T_MAX - h[1]
+                
+                for et in range(h[3]):
+
+                    reward = 1
+
+                    for jj in range(ii, len(high_level_activations)):
+                        h2 = high_level_activations[jj]
+
+                        reward_key = 0
+                        if h[0]==h2[0]:
+                            ss = TRAJECTORY[h2[1] + et]
+                            reward_key = (ss, h2[0], h2[3] - et)
+                        
+                        else:
+                            ss = TRAJECTORY[h2[1]]
+                            reward_key = (ss, h2[0], h2[3])
+                        
+                        if reward_key[-1] >0:
+                            reward = reward * REWARDS_DICT[reward_key]
+                        else:
+                            reward = 0
+
+
+
+                    s = TRAJECTORY[h[1] + et]
+                    k = (s, tuple(act_events), TT_MAXX-et)
+
+
+                    Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]]  = Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]] + 0.1 * (reward- Q(k, n_actions= N_GOALS)[GOAL_INDEX[h[0]]])
+
+                act_events.append(h[0])
+
+        trial_list_2.append(reward_list)
+        print(f"RUN {trial} AVERAGE RETURN = {np.array(reward_list).mean()}")
+    trial_list_2 = np.array(trial_list_2)
+    print(trial_list_2.shape)
+    trial_list_2 = np.mean(trial_list_2, axis = 0)
+    plt.plot(trial_list, label="META PLANNER")
+    plt.plot(trial_list_2, label="RANDOM APPROACH")
+    plt.show()
+    
+
 
 
 
