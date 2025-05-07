@@ -6,7 +6,7 @@ from matplotlib import pyplot as plt
 import random
 
 
-STOP_PROB = 1/5
+STOP_PROB = 0.1
 GAMMA = 0.99
 Q_FLAG = True
 
@@ -24,7 +24,9 @@ POINTS = {
     '🌮' : (15,35),
     '🍣' : (40,44),
     '🥓' : (5,31),
-    '🍤': (-1,-1)
+    '🥐' :(20,20),
+    '🍤': (25,37),
+    '🍓': (43,15)
 }
 
 ACTION_DICT = {
@@ -34,8 +36,22 @@ ACTION_DICT = {
     3: (0,-1)
 }
 
+
+REVERSE_ACTION_DICT = {
+    (0,1) : 0,
+    (1,0) : 1,
+    (-1,0) : 2,
+    (0,-1) : 3,
+    (1,1) : 0,
+    (0,0) :0,
+    (-1, -1): 2,
+    (1,-1): 1,
+    (-1, 1): 2
+}
+
+
 IMPOSSIBLE_GOALS = ['🍤']
-GOALS = ['🍜' ,'🥗' ,'🍸' ,'🍹' ,'🌮','🍣','🥓'] + IMPOSSIBLE_GOALS
+GOALS = ['🍜' ,'🥗' ,'🍸' ,'🍹' ,'🌮','🍣','🥓', '🥐','🍤', '🍓'] #+ IMPOSSIBLE_GOALS
 N_GOALS = len(GOALS)
 GOAL_INDEX = {g:i for i,g in enumerate(GOALS)}
 
@@ -116,7 +132,7 @@ def episilon_greedy_meta_policy(s, episilon = 0.1):
 def render():
 
     global POINTS, STOP_PROB, ACTION_DICT, N, T_MAX
-    
+    time.sleep(1)
     grid = '#'*(N+2) + '\n'
     for i in range(N):
         line = '#'
@@ -164,6 +180,7 @@ def run_policy(goal, t):
     ss = POINTS['🤖']
     for i in range(t):
         
+        #render()
         ss , reward = step(Q((POINTS['🤖'], goal)).argmax(), goal)
 
         if reward==1:
@@ -171,6 +188,33 @@ def run_policy(goal, t):
     
     return ss, t, False
 
+
+def check_sign(number):
+    if number > 0:
+        return 1
+    elif number < 0:
+        return -1
+    else:
+        return 0
+
+
+
+def run_universal_policy(goal, t):
+
+    global POINTS
+    
+    ss = POINTS['🤖']
+    POINTS['G'] = goal
+    for i in range(t):
+        
+        action = REVERSE_ACTION_DICT[(check_sign(goal[0] -ss[0]), check_sign(goal[1] - ss[1]))]
+        #render()
+        ss , reward = step(action, 'G')
+
+        if reward==1:
+            return ss,(i+1), True
+    
+    return ss, t, False
 
 
 
@@ -194,44 +238,50 @@ def main():
         
     reset()
 
+    task = random.sample(GOALS,3)
     total_time = 0
     events = []
     goal_completed = False
 
+    buffer_history = set()
+
+    perceived_options_set = set()
+    print(task)
+
     while(not goal_completed):
-
-        #s = POINTS['🤖']
-        pe = possible_events(tuple(events)) 
-        event_done = False
-        p = None
-        t = 0
-
-        while(not event_done):
         
-            # ADDING THE MAX TIME
-            t+=1
+        sx,sy = POINTS['🤖']
+        # Check for perception of event
+        for g in task:
+            gx,gy = POINTS[g]
+            if (abs(sx-gx) <=5) and (abs(sy-gy) <=5):
+
+                buffer_history.add(((sx,sy), g))
+                perceived_options_set.add(g)
+        
+        # perform exploratory action
+        action = np.random.randint(4)
+        ss, _ = step(action, goal)
+        total_time +=1
+
+        if len(perceived_options_set) ==3:
+            goal_completed = True
+            for g in task:
+                gx,gy = POINTS[g]
+                if (abs(sx-gx) <=5) and (abs(sy-gy) <=5): 
+                    _,elapsed_time, _ = run_policy(g, 100)
+
+                    total_time += elapsed_time
+
+                else:
+
+                    goal_state = [x for x in buffer_history if x[1] == g][0][0]
+                    _,elapsed_time, _ = run_universal_policy(goal_state, 100)
+                    total_time += elapsed_time
+                    _,elapsed_time, _ = run_policy(g, 100)
+                    total_time += elapsed_time
             
-            for e in pe:
-                _ ,_ , done = run_policy(e, t)
-                total_time += t
-
-                if done:
-                    event_done = True
-                    p = e
-                    print(f'EVENT DONE IN {t}')
-                    print(f"EVENT {p}")
-                    
-                
-        events.append(p)
-        for possible_path in POSSIBLE_PATHS:
-            if set(events) == set(possible_path):
-                
-                goal_completed = True
-                print(events)
-                print(f"Done in {total_time} timesteps")
-                
-
-
+            print(total_time)
 
 
 if __name__=='__main__':
