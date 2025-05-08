@@ -240,55 +240,59 @@ def main():
 
 
     buffer_history = set()
-    perceived_options_set = set()
     total_time_list = []
-    for _ in range(10_000):
+    
+    for ep in range(10_000):
 
-        task = random.sample(GOALS,3)
+        task = tuple(sorted(random.sample(GOALS,3)))
+        #task = ('🍜', '🍤', '🥐')
         total_time = 0
         events = []
         goal_completed = False
-        print(task)
+        task_completed_set = set()
+        #print(task, ep)
 
-        while(not goal_completed):
+        while(not (goal_completed or total_time>5_000)):
             
-            sx,sy = POINTS['🤖']
-            # Check for perception of event
-            for g in task:
-                gx,gy = POINTS[g]
-                if (abs(sx-gx) <=5) and (abs(sy-gy) <=5):
-
-                    buffer_history.add(((sx,sy), g))
-                    perceived_options_set.add(g)
+            s = POINTS['🤖']
             
             # perform exploratory action
-            action = np.random.randint(4)
+            s_extended = (s, task, tuple(sorted(task_completed_set)))
+            
+            action = Q(s_extended).argmax()
+        
+            if (np.random.uniform()< 0.1 or Q(s_extended).max()==0):
+                action = np.random.randint(4)                    
+
             ss, _ = step(action, goal)
-            total_time +=1
+            
+            reward = 0
+            for g in task:    
+                if POINTS[g] == ss:
+                    task_completed_set.add(g)
+                    #print('hey')
+                    
 
-            if set(task).issubset(perceived_options_set):
-                goal_completed = True
-                for g in task:
-                    gx,gy = POINTS[g]
-                    if (abs(sx-gx) <=5) and (abs(sy-gy) <=5): 
-                        _,elapsed_time, _ = run_policy(g, 100)
-
-                        total_time += elapsed_time
-
-                    else:
-
-                        goal_state = [x for x in buffer_history if x[1] == g][0][0]
-                        _,elapsed_time, _ = run_universal_policy(goal_state, 100)
-                        total_time += elapsed_time
-                        _,elapsed_time, _ = run_policy(g, 100)
-                        total_time += elapsed_time
+            
+            ss_extended = (ss, task, tuple(sorted(task_completed_set)))
+            if len(task_completed_set) == 3:
                 
-                print(total_time)
-                total_time_list.append(total_time)
-    
-    with open('a.txt', 'w+') as f:
-        f.write(str(total_time_list))
+                goal_completed = True
+                reward = 1
+                print('DONE')
 
+            Q(s_extended)[action] = Q(s_extended)[action] + 0.1 * (reward + GAMMA * (1-reward) * np.max(Q(ss_extended)) - Q(s_extended)[action])
+            
+            
+            total_time +=1
+            #if total_time % 1000==0:
+            #    print(Q(s_extended).sum())
+
+        print(ep,total_time)
+        total_time_list.append(total_time_list)
+    
+    with open('b.txt', 'w+') as f:
+        f.write(str(total_time_list))
 
 
 if __name__=='__main__':
